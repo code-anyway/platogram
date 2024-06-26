@@ -4,7 +4,6 @@ from functools import lru_cache
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-import gdown  # type: ignore
 import requests  # type: ignore
 from yt_dlp import YoutubeDL  # type: ignore
 
