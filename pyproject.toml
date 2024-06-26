@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "platogram"
+version = "0.1.0"
+description = "Platogram: Unlock the power of knowledge stored in audio."
+authors = ["Code Anway <platogram@codeanyway.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10"
+yt-dlp = ">=2024.03.10"
+chromadb = ">=0.4.15"
+anthropic = ">=0.21.3"
+requests = "^2.31.0"
+assemblyai = "^0.26.0"
+tenacity = "^8.4.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+pytest-asyncio = "^0.21.1"
+pytest-xdist = "^3.3.1"
+mypy = ">=1.9.0"
+ruff = ">=0.3.5"
+coverage = "^7.3.2"
+ipykernel = "^6.26.0"
+pytest-cov = "^4.1.0"
+isort = "^5.13.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
