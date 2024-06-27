@@ -12,6 +12,10 @@ Platogram is an open-source project that converts audio content into structured,
 
 ## Getting Started
 
+<a target="_blank" href="https://colab.research.google.com/github/code-anyway/platogram/blob/main/notebooks/quick_start.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
+
 ### Prerequisites
 
 - Access to Anthropic's Claude API (required)
