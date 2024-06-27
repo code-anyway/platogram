@@ -15,8 +15,9 @@ Platogram is an open-source project that converts audio content into structured,
 ### Prerequisites
 
 - Access to Anthropic's Claude API (required)
-- Assembly AI API access (optional, for improved transcription)
+- Assembly AI API access (optional, for transcription)
 - Python 3.10+
+- FFmpeg (optional, for transcription)
 
 ### Installation
 
