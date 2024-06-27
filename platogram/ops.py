@@ -1,3 +1,4 @@
+from tqdm import tqdm
 import re
 from typing import Callable
 from platogram.llm import LanguageModel
@@ -143,7 +144,7 @@ def get_paragraphs(
     tail = ""
     paragraphs = []
     chunks = chunk_text(text, chunk_size, llm.count_tokens)
-    for i, chunk in enumerate(chunks):
+    for i, chunk in tqdm(enumerate(chunks), total=len(chunks)):
         chunk = tail + chunk
 
         base_marker = sorted(parse(chunk).keys())[0]
