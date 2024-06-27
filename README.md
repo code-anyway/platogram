@@ -39,8 +39,6 @@ import platogram as plato
 llm = plato.llm.get_model("anthropic/claude-3-5-sonnet", "YOUR_ANTHROPIC_API_KEY")
 asr = plato.asr.get_model("assembly-ai/best", "YOUR_ASSEMBLYAI_API_KEY")  # Optional
 
-  
-
 # Process audio
 url = "https://youtu.be/example"
 transcript = plato.extract_transcript(url, asr)
@@ -61,9 +59,10 @@ for paragraph in content.paragraphs:
 - Extract key insights from interviews or meetings
 - Build a personal knowledge base from audio content
 - Enhance learning by converting lectures into structured notes
+
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache 2 License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
