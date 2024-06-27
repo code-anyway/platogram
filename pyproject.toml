@@ -14,6 +14,7 @@ anthropic = ">=0.21.3"
 requests = "^2.31.0"
 assemblyai = "^0.26.0"
 tenacity = "^8.4.1"
+tqdm = "^4.66.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
