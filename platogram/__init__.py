@@ -18,6 +18,7 @@
 from platogram.ops import index, get_paragraphs  # noqa: E402
 from platogram.ingest import extract_transcript  # noqa: E402
 from platogram import llm, asr, library, ops  # noqa: E402
+from platogram.types import Content, SpeechEvent  # noqa: E402
 
 
 __all__ = [
@@ -28,4 +29,6 @@ __all__ = [
     "asr",
     "library",
     "ops",
+    "Content",
+    "SpeechEvent",
 ]
