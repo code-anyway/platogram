@@ -1,4 +1,4 @@
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore
 import re
 from typing import Callable
 from platogram.llm import LanguageModel
@@ -144,47 +144,50 @@ def get_paragraphs(
     tail = ""
     paragraphs = []
     chunks = chunk_text(text, chunk_size, llm.count_tokens)
-    for i, chunk in tqdm(enumerate(chunks), total=len(chunks)):
-        chunk = tail + chunk
+    with tqdm(total=len(chunks), initial=0) as pbar:
+        pbar.update(0)
+        for i, chunk in enumerate(chunks):
+            chunk = tail + chunk
 
-        base_marker = sorted(parse(chunk).keys())[0]
-        content = render(
-            {marker - base_marker: text for marker, text in parse(chunk).items()}
-        )
+            base_marker = sorted(parse(chunk).keys())[0]
+            content = render(
+                {marker - base_marker: text for marker, text in parse(chunk).items()}
+            )
 
-        # limit the number of output tokens to chunk size
-        for paragraph in llm.get_paragraphs(
-            content, examples, max_tokens=max_tokens, temperature=temperature
-        ):
-            # we are not parsing again, because sometimes model returns paragraphs without trailing marker
-            paragraphs.append(
-                re.sub(
-                    r"【(\d+)】",
-                    lambda match: f"【{int(match.group(1)) + base_marker}】",
-                    paragraph,
+            # limit the number of output tokens to chunk size
+            for paragraph in llm.get_paragraphs(
+                content, examples, max_tokens=max_tokens, temperature=temperature
+            ):
+                # we are not parsing again, because sometimes model returns paragraphs without trailing marker
+                paragraphs.append(
+                    re.sub(
+                        r"【(\d+)】",
+                        lambda match: f"【{int(match.group(1)) + base_marker}】",
+                        paragraph,
+                    )
                 )
-            )
 
-        if i < len(chunks) - 1:
-            paragraphs.pop()
-            # discard paragraphs without markers
-            while paragraphs and not re.findall(r"【(\d+)】", paragraphs[-1]):
+            if i < len(chunks) - 1:
                 paragraphs.pop()
+                # discard paragraphs without markers
+                while paragraphs and not re.findall(r"【(\d+)】", paragraphs[-1]):
+                    paragraphs.pop()
 
-        if len(paragraphs) > 1:
-            # we are not parsing, because sometimes model returns paragraphs without trailing marker
-            last_marker = sorted(
-                [int(marker) for marker in re.findall(r"【(\d+)】", paragraphs[-1])]
-            )[-1]
-            tail = render(
-                {
-                    marker: text
-                    for marker, text in parse(chunk).items()
-                    if marker >= last_marker
-                }
-            )
-        else:
-            tail = chunk
+            if len(paragraphs) > 1:
+                # we are not parsing, because sometimes model returns paragraphs without trailing marker
+                last_marker = sorted(
+                    [int(marker) for marker in re.findall(r"【(\d+)】", paragraphs[-1])]
+                )[-1]
+                tail = render(
+                    {
+                        marker: text
+                        for marker, text in parse(chunk).items()
+                        if marker >= last_marker
+                    }
+                )
+            else:
+                tail = chunk
+            pbar.update(1)
 
     return paragraphs
 
