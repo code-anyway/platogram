@@ -6,6 +6,9 @@ authors = ["Code Anway <platogram@codeanyway.com>"]
 license = "Apache-2.0"
 readme = "README.md"
 
+[tool.poetry.scripts]
+plato = "platogram.cli:main"
+
 [tool.poetry.dependencies]
 python = ">=3.10"
 yt-dlp = ">=2024.03.10"
