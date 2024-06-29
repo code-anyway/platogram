@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 @lru_cache(maxsize=None)
 def get_metadata(url: str) -> dict:
-    ydl_opts = {"skip_download": True}
+    ydl_opts = {"skip_download": True, "quiet": True}
     with YoutubeDL(ydl_opts) as ydl:
         try:
             meta = ydl.extract_info(url, download=False)
@@ -26,7 +26,7 @@ def get_metadata(url: str) -> dict:
             logger.warning(f"Failed to extract metadata: {e}")
             return {}
 
-    return meta
+    return meta  # type: ignore
 
 
 def has_subtitles(url: str) -> bool:
@@ -57,6 +57,7 @@ def download_subtitles(url: str, output_dir: Path) -> Path:
             "subtitlesformat": "vtt",
             "outtmpl": str(output_dir / "subtitles"),
             "skip_download": True,
+            "quiet": True,
         }
     ) as ydl:
         ydl.download([url])
@@ -86,6 +87,7 @@ def download_audio(url: str, output_dir: Path) -> Path:
             "outtmpl": f"{file_path}.%(ext)s",
             "external-downloader": "aria2c",
             "external-downloader-args": "-c -j 3 -x 3 -s 3 -k 1M",
+            "quiet": True,
         }
     ) as ydl:
         ydl.download([url])
@@ -98,9 +100,6 @@ def download_audio(url: str, output_dir: Path) -> Path:
 def download_file(url: str, output_dir: Path) -> Path:
     if url.lower().startswith("file://"):
         return Path(url.replace("file://", ""))
-
-    if url.lower().startswith("https://drive.google.com"):
-        return gdown.download(url, fuzzy=True)
 
     with requests.get(url) as response:
         response.raise_for_status()
