@@ -36,7 +36,7 @@ pip install git+https://github.com/code-anyway/platogram.git
 Obtain your API keys for Anthropic and Aseembly AI. Provide a URL to audio source or local file name.
 
 ```bash
-poetry run plato \
+plato \
 --anthropic-api-key "YOUR_ANTHROPIC_API_KEY" \
 --assemblyai-api-key "YOUR_ASSEMBLYAI_API_KEY" \
 https://www.youtube.com/shorts/XsLK3tPy9SI
