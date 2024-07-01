@@ -4,6 +4,8 @@ from urllib.parse import urlparse
 from pathlib import Path
 import platogram as plato
 import re
+from typing import Callable, Literal
+
 
 CACHE_DIR = Path("./.platogram-cache")
 
@@ -15,8 +17,8 @@ def format_time(ms):
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 
-def render_reference(content, i, url):
-    link = f" [[{i+1}]]({url}#t={content.transcript[i].time_ms // 1000})"
+def render_reference(url: str, transcript: list[plato.SpeechEvent], i: int) -> str:
+    link = f" [[{i+1}]]({url}#t={transcript[i].time_ms // 1000})"
     return link
 
 
@@ -30,33 +32,18 @@ def render_transcript(first, last, transcript, url):
     )
 
 
-def render_paragraph(p: str, content: plato.Content, url: str) -> str:
+def render_paragraph(p: str, render_reference_fn: Callable[[int], str]) -> str:
     references = sorted([int(i) for i in re.findall(r"【(\d+)】", p)])
     if not references:
         return p
 
     paragraph = re.sub(
         r"【(\d+)】",
-        lambda match: render_reference(content, int(match.group(1)), url),
+        lambda match: render_reference_fn(int(match.group(1))),
         p,
     )
 
     return paragraph
-
-
-def render_content(content: plato.Content, url: str) -> str:
-    markdown = "\n\n".join(
-        [render_paragraph(p, content, url) for p in content.paragraphs]
-    )
-
-    return f"""
-# {content.title}
-{content.short_summary}
-## Summary
-{content.summary}
-## Content
-{markdown}
-"""
 
 
 def make_file_name(url: str) -> str:
@@ -88,11 +75,11 @@ def process_url(url, anthropic_api_key, assemblyai_api_key=None):
     return content
 
 
-def prompt_content(content, prompt, context_size, anthropic_api_key):
+def prompt_content(content: list[plato.Content], prompt: str, context_size: Literal["small", "medium", "large"], anthropic_api_key: str | None) -> str:
     llm = plato.llm.get_model("anthropic/claude-3-5-sonnet", anthropic_api_key)
     response = llm.prompt(
         prompt=prompt,
-        context=[content],
+        context=content,
         context_size=context_size,
     )
     return response
@@ -108,8 +95,8 @@ def is_uri(s):
 
 def main():
     parser = argparse.ArgumentParser(description="Platogram CLI")
-    parser.add_argument("url_or_file", help="URL or file to process")
-    parser.add_argument("--anthropic-api-key", required=True, help="Anthropic API key")
+    parser.add_argument("url_or_file", nargs="?", help="URL or file to process")
+    parser.add_argument("--anthropic-api-key", help="Anthropic API key")
     parser.add_argument("--assemblyai-api-key", help="AssemblyAI API key")
     parser.add_argument("--prompt", help="Prompt for content generation")
     parser.add_argument(
@@ -118,29 +105,64 @@ def main():
         default="small",
         help="Context size for prompting",
     )
-    parser.add_argument("--transcript", action="store_true", help="Include transcript")
+    parser.add_argument("--title", action="store_true", help="Include title")
+    parser.add_argument("--abstract", action="store_true", help="Include abstract")
+    parser.add_argument("--discussion", action="store_true", help="Include discussion")
+    parser.add_argument("--references", action="store_true", help="Include references")
+    parser.add_argument("--origin", action="store_true", help="Include origin URL")
+    parser.add_argument(
+        "--inline-references", action="store_true", help="Render references inline"
+    )
     args = parser.parse_args()
-
-    if is_uri(args.url_or_file):
-        url = args.url_or_file
+    
+    if not args.url_or_file:
+        if CACHE_DIR.exists():
+            files = CACHE_DIR.glob("*.json")
+            
+            print("Using the following cached files:")
+            for file in files:
+                print(file.name)
+            urls = [f"file://{file}" for file in files]
+        else:
+            print("No cached content found in .platogram-cache. Please provide a URL or file.", file=sys.stderr)
+            return
     else:
-        if not Path(args.url_or_file).exists():
-            raise FileNotFoundError(args.url_or_file)
-        url = f"file://{Path(args.url_or_file)}"
+        urls = [url if is_uri(url) else f"file://{Path(url)}" for url in [args.url_or_file]]
 
-    content = process_url(url, args.anthropic_api_key, args.assemblyai_api_key)
+    content = [process_url(url, args.anthropic_api_key, args.assemblyai_api_key) for url in urls]
 
+    result = ""
     if args.prompt:
-        result = prompt_content(
-            content, args.prompt, args.context_size, args.anthropic_api_key
-        )
-        print(render_paragraph(result, content, url))
-    else:
-        print(render_content(content, url))
+        result += f"""\n\n{
+            prompt_content(
+                content, args.prompt, args.context_size, args.anthropic_api_key
+            )}\n\n"""
 
-    if args.transcript:
-        print("\n## Transcript\n")
-        print(render_transcript(0, len(content.transcript), content.transcript, url))
+    for c, u in zip(content, urls):
+        if args.origin:
+            result += f"""\n\n## Origin\n\n{u}\n\n"""
+
+        if args.title:
+            result += f"""\n\n## Title\n\n{c.title}\n\n"""
+
+        if args.abstract:
+            result += f"""\n\n## Abstract\n\n{c.summary}\n\n"""
+
+        if args.discussion:
+            discussion = "\n\n".join(c.paragraphs)
+            result += f"""\n\n## Discussion\n\n{discussion}\n\n"""
+
+        if args.references:
+            result += f"""\n\n## References\n\n{render_transcript(0, len(c.transcript), c.transcript, u)}\n\n"""
+
+        if args.inline_references:
+            render_reference_fn = lambda i: render_reference(u, c.transcript, i)
+        else:
+            render_reference_fn = lambda _: ""
+
+        result = render_paragraph(result, render_reference_fn)
+
+    print(result)
 
 
 if __name__ == "__main__":
