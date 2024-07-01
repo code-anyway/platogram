@@ -175,16 +175,20 @@ def get_paragraphs(
 
             if len(paragraphs) > 1:
                 # we are not parsing, because sometimes model returns paragraphs without trailing marker
-                last_marker = sorted(
+                markers = sorted(
                     [int(marker) for marker in re.findall(r"【(\d+)】", paragraphs[-1])]
-                )[-1]
-                tail = render(
-                    {
-                        marker: text
-                        for marker, text in parse(chunk).items()
-                        if marker >= last_marker
-                    }
                 )
+                if markers:
+                    last_marker = markers[-1]
+                    tail = render(
+                        {
+                            marker: text
+                            for marker, text in parse(chunk).items()
+                            if marker >= last_marker
+                        }
+                    )
+                else:
+                    tail = chunk
             else:
                 tail = chunk
             pbar.update(1)
