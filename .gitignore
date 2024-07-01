@@ -1,6 +1,7 @@
 # Platogrm specific
 .env
 .platogram-cache
+id
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
