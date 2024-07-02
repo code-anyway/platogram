@@ -2,10 +2,12 @@
 
 URL=$1
 plato \
+    --assemblyai-api-key $ASSEMBLYAI_API_KEY \
+    $URL
+plato \
     --prompt "Thoroughly review the <context> and write \"Introduction\" chapter for the paper. Make sure to include <markers>. Output as Markdown. Start with \"## Introduction\"" \
     --context-size medium \
     --inline-references \
-    --assemblyai-api-key $ASSEMBLYAI_API_KEY \
     $URL > introduction.md
 plato \
     --prompt "Thoroughly review the <context> and write \"Conclusion\" chapter for the paper. Make sure to include <markers>. Output as Markdown. Start with \"## Conclusion\"" \
