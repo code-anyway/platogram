@@ -86,7 +86,8 @@ def test_eval_get_paragraphs() -> None:
     result = evaluate(
         render({i: t.text for i, t in enumerate(content.transcript)}), baseline, target
     )
-    result = re.search(r"<suggested_model>(.*?)</suggested_model>", result, re.DOTALL)
-    assert result is not None
-    result = result.group(1)
+
+    match = re.search(r"<suggested_model>(.*?)</suggested_model>", result, re.DOTALL)
+    assert match is not None
+    result = match.group(1)
     assert result == "TARGET"
