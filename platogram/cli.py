@@ -113,7 +113,7 @@ def main():
     )
     parser.add_argument("--title", action="store_true", help="Include title")
     parser.add_argument("--abstract", action="store_true", help="Include abstract")
-    parser.add_argument("--discussion", action="store_true", help="Include discussion")
+    parser.add_argument("--passages", action="store_true", help="Include passages")
     parser.add_argument("--references", action="store_true", help="Include references")
     parser.add_argument("--origin", action="store_true", help="Include origin URL")
     parser.add_argument(
@@ -161,20 +161,20 @@ def main():
 
     for c, u in zip(content, urls):
         if args.origin:
-            result += f"""\n\n## Origin\n\n{u}\n\n"""
+            result += f"""\n\n{u}\n\n"""
 
         if args.title:
-            result += f"""\n\n## Title\n\n{c.title}\n\n"""
+            result += f"""\n\n{c.title}\n\n"""
 
         if args.abstract:
-            result += f"""\n\n## Abstract\n\n{c.summary}\n\n"""
+            result += f"""\n\n{c.summary}\n\n"""
 
-        if args.discussion:
-            discussion = "\n\n".join(c.paragraphs)
-            result += f"""\n\n## Discussion\n\n{discussion}\n\n"""
+        if args.passages:
+            passages = "\n\n".join(c.passages)
+            result += f"""\n\n{passages}\n\n"""
 
         if args.references:
-            result += f"""\n\n## References\n\n{render_transcript(0, len(c.transcript), c.transcript, u)}\n\n"""
+            result += f"""\n\n{render_transcript(0, len(c.transcript), c.transcript, u)}\n\n"""
 
         if args.inline_references:
             render_reference_fn = lambda i: render_reference(u, c.transcript, i)

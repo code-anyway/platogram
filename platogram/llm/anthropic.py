@@ -204,7 +204,7 @@ Follow these steps to rewrite the <transcript> and keep every <marker>:
             )
             paragraphs = [
                 re.sub(r"【(\d+)】", lambda m: f"【{int(m.group(1))+base}】", paragraph)
-                for paragraph in content.paragraphs
+                for paragraph in content.passages
             ]
             paragraphs = [
                 re.sub(

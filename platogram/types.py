@@ -23,5 +23,5 @@ class Content(BaseModel):
     title: str
     summary: str
     short_summary: str
-    paragraphs: list[str]
+    passages: list[str]
     transcript: list[SpeechEvent]
