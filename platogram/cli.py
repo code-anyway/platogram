@@ -141,7 +141,6 @@ def main():
             url if is_uri(url) else f"file://{Path(url)}" for url in [args.url_or_file]
         ]
 
-    print(f"Processing: {urls}", file=sys.stderr)
     content = [
         process_url(url, args.anthropic_api_key, args.assemblyai_api_key)
         for url in urls
@@ -160,21 +159,22 @@ def main():
             )}\n\n"""
 
     for c, u in zip(content, urls):
+        print(f"Processing: {u}", file=sys.stderr)
         if args.origin:
-            result += f"""\n\n{u}\n\n"""
+            result += f"""{u}\n\n\n\n"""
 
         if args.title:
-            result += f"""\n\n{c.title}\n\n"""
+            result += f"""{c.title}\n\n\n\n"""
 
         if args.abstract:
-            result += f"""\n\n{c.summary}\n\n"""
+            result += f"""{c.summary}\n\n\n\n"""
 
         if args.passages:
             passages = "\n\n".join(c.passages)
-            result += f"""\n\n{passages}\n\n"""
+            result += f"""{passages}\n\n\n\n"""
 
         if args.references:
-            result += f"""\n\n{render_transcript(0, len(c.transcript), c.transcript, u)}\n\n"""
+            result += f"""{render_transcript(0, len(c.transcript), c.transcript, u)}\n\n\n\n"""
 
         if args.inline_references:
             render_reference_fn = lambda i: render_reference(u, c.transcript, i)
