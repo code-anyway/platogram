@@ -1,4 +1,16 @@
+from typing import Literal
+
 from pydantic import BaseModel
+
+
+class User(BaseModel):
+    role: Literal["user"] = "user"
+    content: str
+
+
+class Assistant(BaseModel):
+    role: Literal["assistant"] = "assistant"
+    content: str
 
 
 class SpeechEvent(BaseModel):
@@ -11,5 +23,5 @@ class Content(BaseModel):
     title: str
     summary: str
     short_summary: str
-    paragraphs: list[str]
+    passages: list[str]
     transcript: list[SpeechEvent]

@@ -1,9 +1,10 @@
 import json
 import re
-from platogram.types import Content
+from platogram.types import Content, User, Assistant
 
 
 import platogram as plato
+from platogram.ops import render
 
 CONTENT: list[str] = [
     # "https://www.youtube.com/watch?v=l8pRSuU81PU",  # Let's reproduce GPT-2
@@ -20,7 +21,7 @@ CONTENT: list[str] = [
 ]
 
 
-def evaluate(transcript, baseline, target):
+def evaluate(transcript: str, baseline: str, target: str) -> str:
     model = plato.llm.get_model("anthropic/claude-3-opus")
     system_prompt = """<role>
 As a thorough and detail-oriented evaluator, your role is to assess <baseline> and <target> models that convert spoken language transcripts into well-structured, information-dense written text.
@@ -51,14 +52,16 @@ To comprehensively evaluate the performance of these models, you must assess the
 <baseline>{baseline}</baseline>
 """.strip()
 
-    final_report_raw = "<final_report><suggested_model>" + model.prompt_model(
+    response = model.prompt_model(
         messages=[
-            {"role": "user", "content": prompt},
-            {"role": "assistant", "content": "<final_report><suggested_model>"},
+            User(content=prompt),
+            Assistant(content="<final_report><suggested_model>"),
         ],
         temperature=0.3,
         system=system_prompt,
     )
+    assert isinstance(response, str)
+    final_report_raw = "<final_report><suggested_model>" + response
 
     return final_report_raw
 
@@ -67,7 +70,7 @@ def test_eval_get_paragraphs() -> None:
     with open("samples/obama.json") as f:
         content = Content(**json.load(f))
 
-    baseline = "\n".join(f"<p>{p}</p>" for p in content.paragraphs)
+    baseline = "\n".join(f"<p>{p}</p>" for p in content.passages)
     baseline = f"<paragraphs>{baseline}</paragraphs>"
 
     llm = plato.llm.get_model("anthropic/claude-3-5-sonnet")
@@ -80,7 +83,11 @@ def test_eval_get_paragraphs() -> None:
     )
     target = f"<paragraphs>{target}</paragraphs>"
 
-    result = evaluate(content.transcript, baseline, target)
-    result = re.search(r"<suggested_model>(.*?)</suggested_model>", result, re.DOTALL)
-    result = result.group(1)
+    result = evaluate(
+        render({i: t.text for i, t in enumerate(content.transcript)}), baseline, target
+    )
+
+    match = re.search(r"<suggested_model>(.*?)</suggested_model>", result, re.DOTALL)
+    assert match is not None
+    result = match.group(1)
     assert result == "TARGET"

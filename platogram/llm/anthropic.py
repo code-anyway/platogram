@@ -13,6 +13,8 @@ from tenacity import (
 from platogram.types import Content
 from platogram.ops import render
 from typing import Literal
+from platogram.types import User, Assistant
+from typing import Sequence
 
 
 RETRY = retry(
@@ -44,7 +46,7 @@ class Model:
 
     def prompt_model(
         self,
-        messages: list[dict[str, str]],
+        messages: Sequence[User | Assistant],
         max_tokens: int = 4096,
         temperature=0.1,
         stream=False,
@@ -67,7 +69,7 @@ class Model:
                     model=self.model,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    messages=messages,
+                    messages=[{"role": m.role, "content": m.content} for m in messages],
                     **kwargs,
                 )
 
@@ -83,7 +85,7 @@ class Model:
                 model=self.model,
                 max_tokens=max_tokens,
                 temperature=temperature,
-                messages=messages,
+                messages=[{"role": m.role, "content": m.content} for m in messages],
                 **kwargs,
             ) as stream:
 
@@ -131,7 +133,7 @@ You will be given a <text> that contains paragraphs enclosed in <p></p> tags and
 
         meta = self.prompt_model(
             system=system_prompt,
-            messages=[{"role": "user", "content": f"<text>{text}</text>"}],
+            messages=[User(content=f"<text>{text}</text>")],
             tools=[tool_definition],
             max_tokens=max_tokens,
             temperature=temperature,
@@ -168,29 +170,19 @@ Follow these steps to rewrite the <transcript> and keep every <marker>:
                     "\n".join([f"<p>{paragraph}</p>" for paragraph in paragraphs]),
                 )
 
-        messages = sum(
-            [
-                [
-                    {"role": "user", "content": f"<transcript>{prompt}</transcript>"},
-                    {
-                        "role": "assistant",
-                        "content": f"<paragraphs>{response}</paragraphs>",
-                    },
-                ]
-                for prompt, response in format_examples()
-            ],
-            [],
-        )
+        example_messages: list[User | Assistant] = []
+        for prompt, response in format_examples():
+            example_messages.append(User(content=f"<transcript>{prompt}</transcript>"))
+            example_messages.append(
+                Assistant(content=f"<paragraphs>{response}</paragraphs>")
+            )
 
         paragraphs = self.prompt_model(
             max_tokens=max_tokens,
-            messages=messages
-            + [
-                {
-                    "role": "user",
-                    "content": f"<transcript>{text_with_markers}</transcript>",
-                },
-                {"role": "assistant", "content": "<paragraphs><p>"},
+            messages=[
+                *example_messages,
+                User(content=f"<transcript>{text_with_markers}</transcript>"),
+                Assistant(content="<paragraphs><p>"),
             ],
             system=system_prompt,
             temperature=temperature,
@@ -212,7 +204,7 @@ Follow these steps to rewrite the <transcript> and keep every <marker>:
             )
             paragraphs = [
                 re.sub(r"【(\d+)】", lambda m: f"【{int(m.group(1))+base}】", paragraph)
-                for paragraph in content.paragraphs
+                for paragraph in content.passages
             ]
             paragraphs = [
                 re.sub(
@@ -238,7 +230,7 @@ Follow these steps to rewrite the <transcript> and keep every <marker>:
 
     def prompt(
         self,
-        prompt: str,
+        prompt: Sequence[User | Assistant] | str,
         *,
         context: list[Content],
         context_size: Literal["small", "medium", "large"] = "small",
@@ -266,18 +258,20 @@ Follow the steps in <scratchpad> to construct <response> that is well-structured
 </scratchpad>
 """.strip()
 
+        if isinstance(prompt, str):
+            prompt = [User(content=prompt)]
+
         response = self.prompt_model(
             max_tokens=max_tokens,
             messages=[
-                {
-                    "role": "user",
-                    "content": f"""<context>
+                User(
+                    content=f"""<context>
 {self.render_context(context, context_size)}
 </context>
 <prompt>
 {prompt}
-</prompt>""",
-                }
+</prompt>"""
+                )
             ],
             system=system_prompt,
             temperature=temperature,

@@ -210,7 +210,7 @@ def index(
         title=title,
         summary=summary,
         short_summary=short_summary,
-        paragraphs=paragraphs,
+        passages=paragraphs,  # NOTE: we should experiment and settle on passage vs. paragraph
         transcript=transcript,
     )
 

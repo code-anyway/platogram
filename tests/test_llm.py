@@ -1,4 +1,5 @@
 import platogram
+from platogram.types import Content, SpeechEvent
 import json
 
 
@@ -15,10 +16,10 @@ def test_prompt() -> None:
     context = []
 
     with open("samples/jfk.json") as f:
-        context.append(platogram.types.Content(**json.load(f)))
+        context.append(Content(**json.load(f)))
 
     with open("samples/obama.json") as f:
-        context.append(platogram.types.Content(**json.load(f)))
+        context.append(Content(**json.load(f)))
 
     text = llm.prompt(
         "Compare the summaries of two inauguration speeches in <context> and write a detailed report.",
@@ -32,42 +33,30 @@ def test_prompt() -> None:
 def test_render_context() -> None:
     llm = platogram.llm.get_model("anthropic/claude-3-opus")
     context = [
-        platogram.types.Content(
+        Content(
             title="First Asset",
             summary="First Asset Summary",
             short_summary="First Asset Short Summary",
             transcript=[
-                platogram.types.SpeechEvent(
-                    time_ms=0, text="First Asset Sentence one."
-                ),
-                platogram.types.SpeechEvent(
-                    time_ms=1000, text="First Asset Sentence two."
-                ),
-                platogram.types.SpeechEvent(
-                    time_ms=2000, text="First Asset Sentence three."
-                ),
+                SpeechEvent(time_ms=0, text="First Asset Sentence one."),
+                SpeechEvent(time_ms=1000, text="First Asset Sentence two."),
+                SpeechEvent(time_ms=2000, text="First Asset Sentence three."),
             ],
-            paragraphs=[
+            passages=[
                 "First Asset Sentence one and two【0】",
                 "First Asset Sentence three【2】",
             ],
         ),
-        platogram.types.Content(
+        Content(
             title="Second Asset",
             summary="Second Asset Summary",
             short_summary="Second Asset Short Summary",
             transcript=[
-                platogram.types.SpeechEvent(
-                    time_ms=0, text="Second Asset Sentence one."
-                ),
-                platogram.types.SpeechEvent(
-                    time_ms=1000, text="Second Asset Sentence two."
-                ),
-                platogram.types.SpeechEvent(
-                    time_ms=2000, text="Second Asset Sentence three."
-                ),
+                SpeechEvent(time_ms=0, text="Second Asset Sentence one."),
+                SpeechEvent(time_ms=1000, text="Second Asset Sentence two."),
+                SpeechEvent(time_ms=2000, text="Second Asset Sentence three."),
             ],
-            paragraphs=[
+            passages=[
                 "Second Asset Sentence one and two【0】",
                 "Second Asset Sentence three【2】",
             ],

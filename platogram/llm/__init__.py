@@ -1,5 +1,5 @@
-from typing import Protocol, Literal, Generator
-from platogram.types import Content
+from typing import Protocol, Literal, Generator, Sequence
+from platogram.types import Content, User, Assistant
 
 
 class LanguageModel(Protocol):
@@ -11,7 +11,7 @@ class LanguageModel(Protocol):
 
     def get_paragraphs(
         self,
-        text: str,
+        text_with_markers: str,
         examples: dict[str, list[str]],
         max_tokens: int = 4096,
         temperature: float = 0.5,
@@ -19,7 +19,7 @@ class LanguageModel(Protocol):
 
     def prompt_model(
         self,
-        messages: list[dict[str, str]],
+        messages: Sequence[User | Assistant],
         max_tokens: int = 4096,
         temperature=0.1,
         stream=False,
@@ -29,7 +29,7 @@ class LanguageModel(Protocol):
 
     def prompt(
         self,
-        prompt: str,
+        prompt: Sequence[User | Assistant] | str,
         *,
         context: list[Content],
         context_size: Literal["small", "medium", "large"] = "small",

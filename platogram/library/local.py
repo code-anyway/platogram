@@ -53,7 +53,7 @@ class LocalLibrary:
     def put(self, id: str, content: Content) -> None:
         file = self.home_dir / f"{make_filesystem_safe(id)}.json"
         with open(file, "w") as f:
-            json.dump(content.dict(), f)
+            json.dump(content.model_dump(mode="json"), f)
 
         self.content.add(
             documents=[f"{content.title} {content.summary}"],
@@ -61,9 +61,9 @@ class LocalLibrary:
         )
 
         self.segments.add(
-            documents=[remove_markers(p) for p in content.paragraphs],
-            metadatas=[{"id": id} for _ in content.paragraphs],
-            ids=[get_sha256_hash(f"{id}-{p}") for p in content.paragraphs],
+            documents=[remove_markers(p) for p in content.passages],
+            metadatas=[{"id": id} for _ in content.passages],
+            ids=[get_sha256_hash(f"{id}-{p}") for p in content.passages],
         )
 
     def get_content(self, id: str) -> Content:
@@ -77,7 +77,7 @@ class LocalLibrary:
         file = self.home_dir / f"{make_filesystem_safe(id)}.json"
         file.unlink()
         self.segments.delete(
-            ids=[get_sha256_hash(f"{id}-{p}") for p in content.paragraphs]
+            ids=[get_sha256_hash(f"{id}-{p}") for p in content.passages]
         )
         self.content.delete(ids=[id])
 
