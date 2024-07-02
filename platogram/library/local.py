@@ -53,7 +53,7 @@ class LocalLibrary:
     def put(self, id: str, content: Content) -> None:
         file = self.home_dir / f"{make_filesystem_safe(id)}.json"
         with open(file, "w") as f:
-            json.dump(content.dict(), f)
+            json.dump(content.model_dump(mode="json"), f)
 
         self.content.add(
             documents=[f"{content.title} {content.summary}"],
