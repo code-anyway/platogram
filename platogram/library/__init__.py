@@ -18,8 +18,8 @@ class Library(Protocol):
         self,
         query: str,
         n_results: int,
-        filter_keys: list[str] = [],
-    ) -> list[Content]: ...
+        filter_keys: list[str] | None = None,
+    ) -> tuple[list[Content], list[float]]: ...
 
     def get_content(self, id: str) -> Content: ...
 

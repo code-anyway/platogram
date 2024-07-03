@@ -80,8 +80,9 @@ class LocalBM25Library:
         self,
         query: str,
         n_results: int,
-        filter_keys: list[str] = [],
-    ) -> list[Content]:
+        filter_keys: list[str] | None = None,
+    ) -> tuple[list[Content], list[float]]:
+        filter_keys = filter_keys or []
         results = self.segments.query(
             query_texts=[query],
             n_results=n_results,

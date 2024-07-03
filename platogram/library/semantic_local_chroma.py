@@ -57,7 +57,7 @@ class LocalChromaLibrary:
 
         self.segments.add(
             documents=[remove_markers(p) for p in content.passages],
-            metadatas=[{"id": id} for _ in content.passages],
+            metadatas=[{"id": id, "passage": p} for p in content.passages],
             ids=[get_sha256_hash(f"{id}-{p}") for p in content.passages],
         )
 
@@ -80,14 +80,25 @@ class LocalChromaLibrary:
         self,
         query: str,
         n_results: int,
-        filter_keys: list[str] = [],
-    ) -> list[Content]:
+        filter_keys: list[str] | None = None,
+    ) -> tuple[list[Content], list[float]]:
+        filter_keys = filter_keys or []
         results = self.segments.query(
             query_texts=[query],
             n_results=n_results,
             where={"id": {"$in": filter_keys}} if filter_keys else None,  # type: ignore
         )
-        return [
-            self.get_content(str(metadata["id"]))
-            for metadata in results["metadatas"][0]  # type: ignore
-        ]
+
+        retrieved_content: dict[str, Content] = {}
+        if not results or not results["metadatas"] or not results["distances"]:
+            return [], []
+
+        for metadata in results["metadatas"][0]:
+            id = str(metadata["id"])
+            passage = str(metadata["passage"])
+            if id not in retrieved_content:
+                retrieved_content[id] = self.get_content(id)
+                retrieved_content[id].passages = []
+            retrieved_content[id].passages.append(passage)
+
+        return list(retrieved_content.values()), results["distances"][0]
