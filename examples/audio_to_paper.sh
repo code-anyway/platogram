@@ -34,7 +34,8 @@ echo "Generating Documents..."
         --origin \
         "$URL"
     plato \
-        --prompt "Thoroughly review the <context> and identify the list of contributors. Output as Markdown list: First Name, Last Name, Title, Organization. Output \"Unknown\" if the contributors are not known. In the end of the list always add \"- [Platogram](https://github.com/code-anyway/platogram), Chief of Stuff, Code Anyway, Inc.\". Start with \"## Contributors\"" \
+        --query "Thoroughly review the <context> and identify the list of contributors. Output as Markdown list: First Name, Last Name, Title, Organization. Output \"Unknown\" if the contributors are not known. In the end of the list always add \"- [Platogram](https://github.com/code-anyway/platogram), Chief of Stuff, Code Anyway, Inc.\". Start with \"## Contributors\"" \
+        --generate \
         --context-size large \
         --inline-references \
         --prefill $'## Contributors\n' \
@@ -44,7 +45,8 @@ echo "Generating Documents..."
         --abstract \
         "$URL"
     plato \
-        --prompt "Thoroughly review the <context> and write \"Introduction\" chapter for the paper. Make sure to include <markers>. Output as Markdown. Start with \"## Introduction\"" \
+        --query "Thoroughly review the <context> and write \"Introduction\" chapter for the paper. Make sure to include <markers>. Output as Markdown. Start with \"## Introduction\"" \
+        --generate \
         --context-size large \
         --inline-references \
         --prefill $'## Introduction\n' \
@@ -55,7 +57,8 @@ echo "Generating Documents..."
         --inline-references \
         "$URL"
     plato \
-        --prompt "Thoroughly review the <context> and write \"Conclusion\" chapter for the paper. Make sure to include <markers>. Output as Markdown. Start with \"## Conclusion\"" \
+        --query "Thoroughly review the <context> and write \"Conclusion\" chapter for the paper. Make sure to include <markers>. Output as Markdown. Start with \"## Conclusion\"" \
+        --generate \
         --context-size large \
         --inline-references \
         --prefill $'## Conclusion\n' \

@@ -1,12 +1,11 @@
 import os
-import re
 import json
 from pathlib import Path
 
 import chromadb
 
 from platogram.types import Content
-from platogram.utils import get_sha256_hash
+from platogram.utils import get_sha256_hash, make_filesystem_safe
 from platogram.ops import remove_markers
 
 
@@ -16,18 +15,7 @@ from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 EMBEDDING_MODEL = "text-embedding-3-large"
 
 
-def make_filesystem_safe(s):
-    # Remove leading and trailing whitespace
-    s = s.strip()
-    # Replace spaces with underscores
-    s = s.replace(" ", "_")
-    # Remove or replace invalid characters
-    s = re.sub(r"[^\w\-\.]", "", s)
-    # Optional: truncate the string to a max length, e.g., 255 characters
-    return s[:255]
-
-
-class LocalLibrary:
+class LocalBM25Library:
     def __init__(self, home_dir: Path):
         if not home_dir.exists():
             home_dir.mkdir(parents=True)

@@ -13,7 +13,7 @@ def test_process_url():
     url = "https://www.youtube.com/shorts/XsLK3tPy9SI"
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        library = plato.library.get_local(Path(temp_dir))
+        library = plato.library.get_semantic_local_chroma(Path(temp_dir))
 
         content = cli.process_url(
             url, library, anthropic_api_key, assemblyai_api_key, extract_images=True

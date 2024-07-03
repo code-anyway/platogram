@@ -1,12 +1,12 @@
 import json
 
 from pathlib import Path
-from platogram.library import get_local
+from platogram.library import get_semantic_local_chroma
 from platogram.types import Content
 
 
 def test_library(tmp_path: Path) -> None:
-    lib = get_local(tmp_path)
+    lib = get_semantic_local_chroma(tmp_path)
 
     with open("samples/jfk.json", "r") as file:
         indexed_doc = Content(**json.load(file))

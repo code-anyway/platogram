@@ -1,9 +1,21 @@
 import hashlib
+import re
 import logging
 from datetime import datetime
 
 
 logger = logging.getLogger(__name__)
+
+
+def make_filesystem_safe(s):
+    # Remove leading and trailing whitespace
+    s = s.strip()
+    # Replace spaces with underscores
+    s = s.replace(" ", "_")
+    # Remove or replace invalid characters
+    s = re.sub(r"[^\w\-\.]", "", s)
+    # Optional: truncate the string to a max length, e.g., 255 characters
+    return s[:255]
 
 
 def get_sha256_hash(data):
