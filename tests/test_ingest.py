@@ -1,6 +1,16 @@
 import platogram
 
+from pathlib import Path
 from platogram import ingest
+
+
+def test_extract_images(tmp_path):
+    images = ingest.extract_images(
+        "https://www.youtube.com/shorts/XsLK3tPy9SI",
+        timestamps_ms=[0],
+        output_dir=Path(tmp_path),
+    )
+    assert images and all(image.exists() for image in images)
 
 
 def test_slurp_subtitles():

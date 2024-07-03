@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 
 import requests  # type: ignore
 from yt_dlp import YoutubeDL  # type: ignore
+import subprocess
 
 from platogram.parsers import parse_subtitles, parse_waffly
 from platogram.asr import ASRModel
@@ -74,6 +75,33 @@ def get_id(url: str) -> str:
     return id
 
 
+def download_video(url: str, output_dir: Path) -> Path | None:
+    filename = get_id(url)
+    file_path = output_dir / filename
+
+    if url.lower().startswith("file://"):
+        return Path(url.replace("file://", ""))
+
+    try:
+        with YoutubeDL(
+            {
+                "format": "bestvideo/best",
+                "outtmpl": f"{file_path}.%(ext)s",
+                "external-downloader": "aria2c",
+                "external-downloader-args": "-c -j 3 -x 3 -s 3 -k 1M",
+                "quiet": True,
+            }
+        ) as ydl:
+            ydl.download([url])
+
+            for file in output_dir.glob(f"{filename}.*"):
+                file_path = file
+            return file_path
+    except Exception as e:
+        logger.warning(f"Failed to download video: {e}")
+        return None
+
+
 def download_audio(url: str, output_dir: Path) -> Path:
     filename = get_id(url)
     file_path = output_dir / filename
@@ -109,6 +137,60 @@ def download_file(url: str, output_dir: Path) -> Path:
         file = output_dir / f"asset{extension}"
         file.write_bytes(response.content)
         return file
+
+
+def extract_images(
+    url: str, output_dir: Path, timestamps_ms: list[int] | None = None
+) -> list[Path]:
+    """
+    Extracts images from a video at the specified timestamps.
+
+    Args:
+        url (str): The URL of the video.
+        timestamps_ms (list[int], optional): A list of timestamps in milliseconds at which to extract images.
+            If not provided, a single image will be extracted at the start of the video.
+
+    Returns:
+        list[Path]: A list of file paths to the extracted images.
+    """
+    video_path = download_video(url, output_dir)
+
+    if timestamps_ms is None:
+        timestamps_ms = [0]
+
+    image_paths = []
+    try:
+        for timestamp_ms in timestamps_ms:
+            timestamp_s = timestamp_ms / 1000
+            image_path = Path(output_dir) / f"image_{timestamp_ms:09d}.png"
+
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-ss",
+                    f"{timestamp_s:.3f}",
+                    "-i",
+                    str(video_path),
+                    "-frames:v",
+                    "1",
+                    "-q:v",
+                    "2",
+                    "-f",
+                    "image2",
+                    str(image_path),
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+
+            image_paths.append(image_path)
+    finally:
+        # Delete the downloaded video file
+        if video_path:
+            video_path.unlink()
+
+    return image_paths
 
 
 def extract_transcript(

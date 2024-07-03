@@ -102,7 +102,7 @@ class Model:
 
     def get_meta(
         self, paragraphs: list[str], max_tokens: int = 4096, temperature: float = 0.5
-    ) -> tuple[str, str, str]:
+    ) -> tuple[str, str]:
         system_prompt = """<role>
 You are a very capable editor, speaker, educator, and author with a knack for coming up with meta information about the content.
 </role>
@@ -113,7 +113,6 @@ You will be given a <text> that contains paragraphs enclosed in <p></p> tags and
         properties = {
             "title": "Come up with the title which speaks to the essence of the content. Use simple language.",
             "summary": "Distill the key insights and express them as a short story using simple language. Make sure to cover all parts of the summary.",
-            "short_summary": "Short summary expressed in three (3) sentences. Use simple language.",
         }
 
         tool_definition = {
@@ -142,7 +141,7 @@ You will be given a <text> that contains paragraphs enclosed in <p></p> tags and
         assert isinstance(
             meta, dict
         ), f"Expected LLM to return dict with meta information, got {meta}"
-        return meta["title"], meta["summary"], meta["short_summary"]
+        return meta["title"], meta["summary"]
 
     def get_paragraphs(
         self,

@@ -7,7 +7,7 @@ class LanguageModel(Protocol):
 
     def get_meta(
         self, paragraphs: list[str], max_tokens: int = 4096, temperature: float = 0.5
-    ) -> tuple[str, str, str]: ...
+    ) -> tuple[str, str]: ...
 
     def get_paragraphs(
         self,
