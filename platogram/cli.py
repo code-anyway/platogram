@@ -101,9 +101,9 @@ def is_uri(s):
 
 def main():
     parser = argparse.ArgumentParser(description="Platogram CLI")
-    parser.add_argument("url_or_file", nargs="?", help="URL or file to process")
+    parser.add_argument("url_or_file", nargs="?", help="URL or file to query")
     parser.add_argument("--anthropic-api-key", help="Anthropic API key")
-    parser.add_argument("--assemblyai-api-key", help="AssemblyAI API key")
+    parser.add_argument("--assemblyai-api-key", help="AssemblyAI API key (optional)")
     parser.add_argument("--prompt", help="Prompt for content generation")
     parser.add_argument(
         "--context-size",
@@ -132,7 +132,7 @@ def main():
             urls = [f"file://{str(file)}" for file in files]
         else:
             print(
-                "No cached content found in .platogram-cache. Please provide a URL or file.",
+                "No content found in .platogram-cache. Please provide a URL or file.",
                 file=sys.stderr,
             )
             return

@@ -2,9 +2,25 @@
 
 URL="$1"
 
-plato \
-    --assemblyai-api-key $ASSEMBLYAI_API_KEY \
-    "$URL"
+# check if ANTHROPIC_API_KEY is set
+if [ -z "$ANTHROPIC_API_KEY" ]; then
+    echo "ANTHROPIC_API_KEY is not set"
+    echo "Obtain it from https://console.anthropic.com/keys"
+    echo "Run: export ANTHROPIC_API_KEY=<your-api-key>"
+    exit 1
+fi
+
+# check is ASSEMBLYAI_API_KEY is set
+if [ -z "$ASSEMBLYAI_API_KEY" ]; then
+    # Retrieve text from URL (subtitles, etc)
+    plato \
+        "$URL"
+else
+    # Transcribe audio to text
+    plato \
+        --assemblyai-api-key $ASSEMBLYAI_API_KEY \
+        "$URL"
+fi
 
 echo "Generating Documents..."
 
@@ -13,9 +29,13 @@ echo "Generating Documents..."
     plato \
         --title \
         "$URL"
+    echo $'## Origin\n'
+    plato \
+        --origin \
+        "$URL"
     plato \
         --prompt "Thoroughly review the <context> and identify the list of contributors. Output as Markdown list: First Name, Last Name, Title, Organization. Output \"Unknown\" if the contributors are not known. In the end of the list always add \"- [Platogram](https://github.com/code-anyway/platogram), Chief of Stuff, Code Anyway, Inc.\". Start with \"## Contributors\"" \
-        --context-size medium \
+        --context-size large \
         --inline-references \
         --prefill $'## Contributors\n' \
         "$URL"
@@ -25,7 +45,7 @@ echo "Generating Documents..."
         "$URL"
     plato \
         --prompt "Thoroughly review the <context> and write \"Introduction\" chapter for the paper. Make sure to include <markers>. Output as Markdown. Start with \"## Introduction\"" \
-        --context-size medium \
+        --context-size large \
         --inline-references \
         --prefill $'## Introduction\n' \
         "$URL"
@@ -36,7 +56,7 @@ echo "Generating Documents..."
         "$URL"
     plato \
         --prompt "Thoroughly review the <context> and write \"Conclusion\" chapter for the paper. Make sure to include <markers>. Output as Markdown. Start with \"## Conclusion\"" \
-        --context-size medium \
+        --context-size large \
         --inline-references \
         --prefill $'## Conclusion\n' \
         "$URL"
