@@ -18,6 +18,8 @@ requests = "^2.31.0"
 assemblyai = "^0.26.0"
 tenacity = "^8.4.1"
 tqdm = "^4.66.4"
+bm25s = "^0.1.7"
+pystemmer = "^2.2.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"

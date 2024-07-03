@@ -80,7 +80,7 @@ class LocalChromaLibrary:
         self,
         query: str,
         n_results: int,
-        filter_keys: list[str] | None = None,
+        filter_keys: list[str],
     ) -> tuple[list[Content], list[float]]:
         filter_keys = filter_keys or []
         results = self.segments.query(

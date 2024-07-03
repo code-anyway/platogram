@@ -173,9 +173,12 @@ def main():
             for url_or_file in args.inputs
         ]
 
+    if args.retrieval_method == "keyword":
+        library.put(ids[0], context[0])
+
     if args.retrieve:
         n_results = int(args.retrieve)
-        context = library.retrieve(args.query, n_results, ids)
+        context, scores = library.retrieve(args.query, n_results, ids)
 
     result = ""
     if args.generate:

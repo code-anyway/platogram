@@ -5,7 +5,7 @@ Platogram is an open-source project that converts audio content into structured,
 ## Key Features
 
 - Convert audio from YouTube, local files, etc into well-structured text.
-- Create Paragraphs, summaries, and titles from audio content.
+- Create passages, summaries, and titles from audio content.
 - Maintain references to the original transcript and timestamps.
 - Create a searchable knowledge base from processed audio.
 - Use the generated content for further AI-powered analysis and content creation.
@@ -61,8 +61,8 @@ content = plato.index(transcript, llm)
 print(content.title)
 print(content.summary)
 
-for paragraph in content.paragraphs:
-    print(paragraph)
+for passage in content.passages:
+    print(passage)
 ```
 
 ## Use Cases
