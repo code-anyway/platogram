@@ -115,7 +115,7 @@ def main():
         nargs="*",
         help="URLs and files to query, if none provided, will use all content",
     )
-    parser.add_argument("--anthropic-api-key", required=True, help="Anthropic API key")
+    parser.add_argument("--anthropic-api-key", help="Anthropic API key")
     parser.add_argument("--assemblyai-api-key", help="AssemblyAI API key (optional)")
     parser.add_argument(
         "--retrieve", default=None, help="Number of results to retrieve"
