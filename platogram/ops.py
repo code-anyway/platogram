@@ -205,11 +205,10 @@ def index(
 ) -> Content:
     text = render({i: event.text for i, event in enumerate(transcript)})
     paragraphs = get_paragraphs(text, llm, max_tokens, temperature, chunk_size)
-    title, summary, short_summary = llm.get_meta(paragraphs)
+    title, summary = llm.get_meta(paragraphs)
     return Content(
         title=title,
         summary=summary,
-        short_summary=short_summary,
         passages=paragraphs,  # NOTE: we should experiment and settle on passage vs. paragraph
         transcript=transcript,
     )

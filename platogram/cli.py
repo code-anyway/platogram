@@ -4,8 +4,10 @@ from urllib.parse import urlparse
 from pathlib import Path
 import platogram as plato
 from platogram.types import User, Assistant, Content
+import platogram.ingest as ingest
 import re
 from typing import Callable, Literal, Sequence
+from platogram.library import Library
 
 
 CACHE_DIR = Path("./.platogram-cache")
@@ -52,32 +54,43 @@ def make_file_name(url: str) -> str:
     return re.sub(r"\W+", "-", url)
 
 
-def process_url(url, anthropic_api_key, assemblyai_api_key=None):
+def process_url(
+    url: str,
+    library: Library,
+    anthropic_api_key: str,
+    assemblyai_api_key: str | None = None,
+    extract_images: bool = False,
+) -> Content:
     llm = plato.llm.get_model("anthropic/claude-3-5-sonnet", anthropic_api_key)
     asr = (
         plato.asr.get_model("assembly-ai/best", assemblyai_api_key)
         if assemblyai_api_key
         else None
     )
+    id = make_file_name(url)
 
-    CACHE_DIR.mkdir(exist_ok=True)
+    if library.exists(id):
+        return library.get_content(id)
 
-    cache_file = CACHE_DIR / f"{make_file_name(url)}.json"
-    if cache_file.exists():
-        # read from json into pydantic model
-        content = Content.model_validate_json(open(cache_file).read())
-    else:
-        print(f"Extracting transcript for {url}", file=sys.stderr)
-        transcript = plato.extract_transcript(url, asr)
-        print("Indexing content", file=sys.stderr)
-        content = plato.index(transcript, llm)
-        open(cache_file, "w").write(content.model_dump_json(indent=2))
+    print(f"Extracting transcript for {url}", file=sys.stderr)
+    transcript = plato.extract_transcript(url, asr)
+    print("Indexing content", file=sys.stderr)
+    content = plato.index(transcript, llm)
+    if extract_images:
+        print("Extracting images", file=sys.stderr)
+        images_dir = library.home / make_file_name(url)
+        images_dir.mkdir(exist_ok=True)
+        timestamps_ms = [event.time_ms for event in content.transcript]
+        images = ingest.extract_images(url, images_dir, timestamps_ms)
+        content.images = [str(image.relative_to(library.home)) for image in images]
+
+    library.put(id, content)
 
     return content
 
 
-def prompt_content(
-    content: list[Content],
+def prompt_context(
+    context: list[Content],
     prompt: Sequence[Assistant | User],
     context_size: Literal["small", "medium", "large"],
     anthropic_api_key: str | None,
@@ -85,7 +98,7 @@ def prompt_content(
     llm = plato.llm.get_model("anthropic/claude-3-5-sonnet", anthropic_api_key)
     response = llm.prompt(
         prompt=prompt,
-        context=content,
+        context=context,
         context_size=context_size,
     )
     return response
@@ -115,6 +128,7 @@ def main():
     parser.add_argument("--abstract", action="store_true", help="Include abstract")
     parser.add_argument("--passages", action="store_true", help="Include passages")
     parser.add_argument("--references", action="store_true", help="Include references")
+    parser.add_argument("--images", action="store_true", help="Include images")
     parser.add_argument("--origin", action="store_true", help="Include origin URL")
     parser.add_argument(
         "--prefill",
@@ -126,25 +140,20 @@ def main():
     )
     args = parser.parse_args()
 
-    if not args.url_or_file:
-        if CACHE_DIR.exists():
-            files = CACHE_DIR.glob("*.json")
-            urls = [f"file://{str(file)}" for file in files]
-        else:
-            print(
-                "No content found in .platogram-cache. Please provide a URL or file.",
-                file=sys.stderr,
-            )
-            return
-    else:
-        urls = [
-            url if is_uri(url) else f"file://{Path(url)}" for url in [args.url_or_file]
-        ]
+    library = plato.library.get_local(CACHE_DIR)
 
-    content = [
-        process_url(url, args.anthropic_api_key, args.assemblyai_api_key)
-        for url in urls
-    ]
+    if not args.url_or_file:
+        context = [library.get_content(id) for id in library.ls()]
+    else:
+        context = [
+            process_url(
+                args.url_or_file,
+                library,
+                args.anthropic_api_key,
+                args.assemblyai_api_key,
+                extract_images=args.images,
+            )
+        ]
 
     result = ""
     if args.prompt:
@@ -154,30 +163,35 @@ def main():
             prompt = [User(content=args.prompt)]
 
         result += f"""\n\n{
-            prompt_content(
-                content, prompt, args.context_size, args.anthropic_api_key
+            prompt_context(
+                context, prompt, args.context_size, args.anthropic_api_key
             )}\n\n"""
 
-    for c, u in zip(content, urls):
-        print(f"Processing: {u}", file=sys.stderr)
+    for content in context:
+        if args.images and content.images:
+            images = "\n".join([str(image) for image in content.images])
+            result += f"""{images}\n\n\n\n"""
+
         if args.origin:
-            result += f"""{u}\n\n\n\n"""
+            result += f"""{content.origin}\n\n\n\n"""
 
         if args.title:
-            result += f"""{c.title}\n\n\n\n"""
+            result += f"""{content.title}\n\n\n\n"""
 
         if args.abstract:
-            result += f"""{c.summary}\n\n\n\n"""
+            result += f"""{content.summary}\n\n\n\n"""
 
         if args.passages:
-            passages = "\n\n".join(c.passages)
+            passages = "\n\n".join(content.passages)
             result += f"""{passages}\n\n\n\n"""
 
         if args.references:
-            result += f"""{render_transcript(0, len(c.transcript), c.transcript, u)}\n\n\n\n"""
+            result += f"""{render_transcript(0, len(content.transcript), content.transcript, content.origin)}\n\n\n\n"""
 
         if args.inline_references:
-            render_reference_fn = lambda i: render_reference(u, c.transcript, i)
+            render_reference_fn = lambda i: render_reference(
+                content.origin or "", content.transcript, i
+            )
         else:
             render_reference_fn = lambda _: ""
 

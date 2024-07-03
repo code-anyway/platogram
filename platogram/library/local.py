@@ -47,11 +47,18 @@ class LocalLibrary:
             embedding_function=embedding_function,  # type: ignore
         )
 
+    @property
+    def home(self) -> Path:
+        return self.home_dir
+
+    def ls(self) -> list[str]:
+        return [f.stem for f in self.home.glob("*.json")]
+
     def exists(self, id: str) -> bool:
         return bool(self.content.get(ids=[id])["ids"])
 
     def put(self, id: str, content: Content) -> None:
-        file = self.home_dir / f"{make_filesystem_safe(id)}.json"
+        file = self.home / f"{make_filesystem_safe(id)}.json"
         with open(file, "w") as f:
             json.dump(content.model_dump(mode="json"), f)
 
