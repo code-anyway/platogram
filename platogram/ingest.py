@@ -162,7 +162,7 @@ def extract_images(
     try:
         for timestamp_ms in timestamps_ms:
             timestamp_s = timestamp_ms / 1000
-            image_path = Path(output_dir) / f"{timestamp_ms}.jpg"
+            image_path = Path(output_dir) / f"image_{timestamp_ms:09d}.png"
 
             subprocess.run(
                 [
@@ -171,13 +171,17 @@ def extract_images(
                     f"{timestamp_s:.3f}",
                     "-i",
                     str(video_path),
-                    "-vframes",
+                    "-frames:v",
                     "1",
                     "-q:v",
                     "2",
+                    "-f",
+                    "image2",
                     str(image_path),
                 ],
                 check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
             )
 
             image_paths.append(image_path)

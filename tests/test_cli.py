@@ -26,9 +26,9 @@ def test_process_url():
         assert content.transcript is not None
         assert content.images is not None
 
-        images_dir = Path(cli.CACHE_DIR) / cli.make_file_name(url)
+        images_dir = library.home / cli.make_file_name(url)
         assert images_dir.exists()
 
         assert content.transcript
         assert len(content.images) == len(content.transcript)
-        assert all((cli.CACHE_DIR / image).exists() for image in content.images)
+        assert all((library.home / image).exists() for image in content.images)
