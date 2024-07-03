@@ -1,4 +1,4 @@
-# Platogram: Transform Audio into Insightful Essays
+# Platogram: Transform Audio into Knowledge
 
 Platogram is an open-source project that converts audio content into structured, readable essays with embedded references. It's designed to help researchers, content creators, and knowledge workers extract valuable insights from audio sources like lectures, podcasts, and interviews.
 
