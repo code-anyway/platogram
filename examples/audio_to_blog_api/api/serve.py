@@ -12,7 +12,7 @@ def home() -> Tuple[Response, int]:
     try:
         response = """<h1>This is the api for platogram's audio-to-blog</h1>
 <p>Given an HTTP POST request with an audio file (or link to one), get an HTML/Markdown blog post</p>
-<p>Use endpoint /post for post creation</p>
+<p>Use endpoint /post for post creation. Attatch application/json for a url or a file.</p>
 <p>Use endpoint /query/post_id to add/revise a blog post given a query</p>"""
 
         return render_template_string(response), 200
@@ -36,7 +36,9 @@ def post() -> Tuple[Response, int]:
 
     file_name, content = content_to_html(content)
 
-    return render_template_string(content, data={"post_id": file_name}), 200
+    response = {"html": content, "post_id": file_name}
+
+    return jsonify(response), 200
 
 
 @app.route("/query/<int:post_id>", methods=["POST"])
