@@ -29,17 +29,17 @@ def is_valid_url(url: str) -> bool:
         raise e
 
 
-def get_audio_url(src: str | TextIOWrapper, temp_dir: TemporaryDirectory | None) -> str:
+async def get_audio_url(src: str | TextIOWrapper, temp_dir: TemporaryDirectory | None) -> str:
     if type(src) == str and is_valid_url(src):
         return src
     else:
         src.seek(0)
         dest_file =  f"{temp_dir.name}/{sha256(src.read()).hexdigest()}"
-        src.save(dest_file)
+        await src.save(dest_file)
         return f"file://{os.path.abs(dest_file)}"
 
 
-def summarize_audio(
+async def summarize_audio(
         src: str | TextIOWrapper,
         anthropic_model: str = "claude-3-5-sonnet",
         assembly_ai_model: str = "best"
@@ -55,7 +55,7 @@ def summarize_audio(
         content = plato.Content.model_validate_json(open(cache_file).read())
     else:
         with TemporaryDirectory() as temp_dir:
-            url = get_audio_url(src, temp_dir)
+            url = await get_audio_url(src, temp_dir)
             print(url)
 
             transcript = plato.extract_transcript(url, asr)
