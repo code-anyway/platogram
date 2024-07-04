@@ -1,12 +1,23 @@
-from fastapi import FastAPI, HTTPException, Response, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from synthesize import summarize_audio
+from synthesize import summarize_audio, prompt_content
 from response import content_to_html
 
 
 app = FastAPI()
+
+
+def get_src(
+        url: str | None = Form(None),
+        file: UploadFile | None = File(None)
+) -> Form(...) | File(...):
+    if file is not None:
+        src = file.file
+    elif url is not None:
+        src = url
+    else:
+        raise HTTPException(status_code=400, detail="No URL or file found in request")
+    return src
 
 
 @app.get("/")
@@ -24,29 +35,33 @@ async def home() -> HTMLResponse:
 
 
 @app.post("/post")
-async def post(url: str | None = Form(None), file: UploadFile | None = File(None)) -> dict:
+async def generate_post(
+        url: str | None = Form(None),
+        file: UploadFile | None = File(None)
+) -> dict:
     try:
-        if file is not None:
-            src = file.file
-        elif url is not None:
-            src = url
-        else:
-            raise HTTPException(status_code=400, detail="No URL or file found in request")
+        src = get_src(url, file)
 
         content = await summarize_audio(src)
 
-        file_name, html_content = content_to_html(content)
+        html_content = content_to_html(content)
 
-        response = {"html": html_content, "post_id": file_name}
+        response = {"html": html_content}
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/query/{post_id}")
-async def refine_post(post_id: int, query: str) -> dict:
+@app.post("/query")
+async def refine_post(
+        url: str | None = Form(None),
+        file: UploadFile | None = File(None),
+        prompt: str | None = Form(None)
+) -> dict:
     try:
-        return {"message": f"Refining post {post_id} with query: {query}"}
+        src = get_src(url, file)
+
+        response = prompt_content(url, prompt)
+        return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-

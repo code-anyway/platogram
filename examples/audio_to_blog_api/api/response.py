@@ -1,5 +1,4 @@
-from platogram import Content
-from typing import Tuple
+from platogram import Content, User
 
 
 def format_time(ms):
@@ -9,7 +8,7 @@ def format_time(ms):
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 
-def content_to_html(content: Tuple[str, Content]) -> Tuple[str, str]:
+def content_to_html(content: Content) -> str:
     file_name, index = content
 
     html = f"""
@@ -23,8 +22,8 @@ def content_to_html(content: Tuple[str, Content]) -> Tuple[str, str]:
     html += """
         <details>
         <summary>Expand for transcript</summary>
-    """ 
-    
+    """
+
     for chunk in index.transcript:
         timestamp = format_time(chunk.time_ms)
 
@@ -35,4 +34,4 @@ def content_to_html(content: Tuple[str, Content]) -> Tuple[str, str]:
 
     html += "</details>"
 
-    return file_name, html
+    return html

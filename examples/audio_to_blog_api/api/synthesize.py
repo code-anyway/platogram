@@ -1,10 +1,11 @@
 from hashlib import sha256
 from pathlib import Path
 import platogram as plato
+from platogram.types import User, Assistant
 import os
 from tempfile import TemporaryDirectory, SpooledTemporaryFile
-from typing import Tuple
-from urllib import request
+from typing import Sequence, Literal
+from urllib.parse import urlparse
 
 
 CACHE_DIR = Path("./.platogram-cache")
@@ -20,9 +21,9 @@ def make_file_name(src: str | SpooledTemporaryFile):
     return hash
 
 
-def is_uri(s) -> bool:
+def is_uri(src: str) -> bool:
     try:
-        result = urlparse(s)
+        result = urlparse(src)
         return all([result.scheme, result.netloc, result.path])
     except:
         return False
@@ -43,9 +44,15 @@ async def summarize_audio(
         src: str | SpooledTemporaryFile,
         anthropic_model: str = "claude-3-5-sonnet",
         assembly_ai_model: str = "best"
-    ) -> Tuple[str, plato.Content]:
-    llm = plato.llm.get_model(f"anthropic/{anthropic_model}", os.environ["ANTHROPIC_API_KEY"])
-    asr = plato.asr.get_model(f"assembly-ai/{assembly_ai_model}",os.environ["ASSEMBLYAI_API_KEY"])
+) -> plato.Content:
+    llm = plato.llm.get_model(
+        f"anthropic/{anthropic_model}",
+        os.environ["ANTHROPIC_API_KEY"]
+    )
+    asr = plato.asr.get_model(
+        f"assembly-ai/{assembly_ai_model}",
+        os.environ["ASSEMBLYAI_API_KEY"]
+    )
 
     CACHE_DIR.mkdir(exist_ok=True)
 
@@ -56,10 +63,29 @@ async def summarize_audio(
     else:
         with TemporaryDirectory() as temp_dir:
             url = await get_audio_url(src, temp_dir)
-
-
             transcript = plato.extract_transcript(url, asr)
+
         content = plato.index(transcript, llm)
         open(cache_file, "w").write(content.model_dump_json(indent=2))
 
-    return make_file_name(src), content
+    return content
+
+
+async def prompt_content(
+    src: str | SpooledTemporaryFile,
+    prompt: Sequence[Assistant | User],
+    anthropic_model: str = "claude-3-5-sonnet",
+    content_size: Literal["small", "medium", "large"] = "small"
+) -> str:
+    content = summarize_audio(src)
+
+    llm = plato.llm.get_model(
+        f"anthropic/{anthropic_model}",
+        os.environ["ANTHROPIC_API_KEY"]
+    )
+    response = llm.prompt(
+            prompt=prompt,
+            context=content,
+            context_size=content_size,
+    )
+    return response
