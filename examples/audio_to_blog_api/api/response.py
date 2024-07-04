@@ -1,12 +1,15 @@
-from platogram import Content, SpeechEvent
+from platogram import Content
+from typing import Tuple
 
-def content_to_html(index: Content) -> str:
+def content_to_html(content: Tuple[str, Content]) -> Tuple[str, str]:
+    file_name, index = content
+
     html = f"""
         <h2>{index.title}</h2>
         <h4>{index.summary}</h4>
     """
 
-    for paragraph in index.paragraphs:
+    for paragraph in index.passages:
         html += f"<p>{paragraph}</p>"
 
     html += """
@@ -14,7 +17,7 @@ def content_to_html(index: Content) -> str:
         <summary>Expand for transcript</summary>
     """ 
     
-    for chunk in transcript:
+    for chunk in index.transcript:
         timestamp = format_time(chunk.time_ms)
 
         html += f"""
@@ -24,7 +27,7 @@ def content_to_html(index: Content) -> str:
 
     html += "</details>"
 
-    return html
+    return file_name, html
 
 def format_time(time_ms: str) -> str:
     time_seconds = time_ms // 1000
