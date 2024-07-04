@@ -57,6 +57,7 @@ async def summarize_audio(
         with TemporaryDirectory() as temp_dir:
             url = await get_audio_url(src, temp_dir)
 
+
             transcript = plato.extract_transcript(url, asr)
         content = plato.index(transcript, llm)
         open(cache_file, "w").write(content.model_dump_json(indent=2))

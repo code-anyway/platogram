@@ -9,7 +9,7 @@ def content_to_html(content: Tuple[str, Content]) -> Tuple[str, str]:
         <h4>{index.summary}</h4>
     """
 
-    for paragraph in index.passages:
+    for paragraph in index.paragraphs:
         html += f"<p>{paragraph}</p>"
 
     html += """
