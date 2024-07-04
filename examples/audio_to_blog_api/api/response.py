@@ -1,6 +1,14 @@
 from platogram import Content
 from typing import Tuple
 
+
+def format_time(ms):
+    seconds = ms // 1000
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
 def content_to_html(content: Tuple[str, Content]) -> Tuple[str, str]:
     file_name, index = content
 
@@ -28,13 +36,3 @@ def content_to_html(content: Tuple[str, Content]) -> Tuple[str, str]:
     html += "</details>"
 
     return file_name, html
-
-def format_time(time_ms: str) -> str:
-    time_seconds = time_ms // 1000
-    time_minutes = time_seconds // 60
-    time_hours = time_minutes // 60
-
-    if time_hours == 0:
-        return f"{time_minutes%60}:{time_seconds%60}"
-    else:
-        return f"{time_hours}:{time_minutes%60}:{time_seconds%60}"

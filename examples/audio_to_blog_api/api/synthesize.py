@@ -20,16 +20,16 @@ def make_file_name(src: str | SpooledTemporaryFile):
     return hash
 
 
-def is_valid_url(url: str) -> bool:
+def is_uri(s) -> bool:
     try:
-        res = request.urlopen(url)
-        return res.getcode() == 200
-    except request.HTTPError as e:
-        raise e
+        result = urlparse(s)
+        return all([result.scheme, result.netloc, result.path])
+    except:
+        return False
 
 
 async def get_audio_url(src: str | SpooledTemporaryFile, temp_dir: str | None) -> str:
-    if type(src) == str and is_valid_url(src):
+    if type(src) == str and is_uri(src):
         return src
     else:
         dest_file =  f"{temp_dir}/{sha256(src.read()).hexdigest()}"

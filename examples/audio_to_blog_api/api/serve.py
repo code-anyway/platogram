@@ -22,6 +22,7 @@ async def home() -> HTMLResponse:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/post")
 async def post(url: str | None = Form(None), file: UploadFile | None = File(None)) -> dict:
     try:
@@ -40,6 +41,7 @@ async def post(url: str | None = Form(None), file: UploadFile | None = File(None
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/query/{post_id}")
 async def refine_post(post_id: int, query: str) -> dict:
