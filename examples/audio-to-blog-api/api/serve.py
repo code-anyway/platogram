@@ -9,16 +9,22 @@ app = Flask(__name__)
 
 
 @app.route("/")
-def home() -> str:
-    body = """<h1>Meeting to Blog!</h1>
-        <h3>Powered by Platogram (https://github.com/code-anyway/platogram)</h3>
-        <p>Given an audio recording (of a meeting), generate a blog post</p>
-    """
-    return body
+def home() -> Tuple[Response, int]:
+    try:
+        response = {"body": """<h1>This is the api for platogram's audio-to-blog</h1>
+            <p>Given an HTTP POST request with an audio file (or link to one), get an HTML/Markdown blog post</p>
+            <p>Use endpoint /post for post creation</p>
+            <p>Use endpoint /query/post_id to add/revise a blog post given a query</p>
+        """}
+        return jsonify(response), 500
+    except Exception as e:
+        return jsonify({"error": e}), 500
+
 
 @app.route("/post", methods=["POST"])
 def post() -> str:
-
+    req = request.json
+    
     return body
 
 @app.route("/query/<int:post_id>", methods=["POST"])
