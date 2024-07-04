@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Response, UploadFile, File
+from fastapi import FastAPI, HTTPException, Response, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -7,12 +7,6 @@ from response import content_to_html
 
 
 app = FastAPI()
-
-
-class Item(BaseModel):
-    url: str | None = None
-    post_id: str | None = None
-    query: str | None  = None
 
 
 @app.get("/")
@@ -29,10 +23,12 @@ async def home() -> HTMLResponse:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/post")
-async def post(item:UploadFile = File(...)) -> dict:
+async def post(url: str | None = Form(None), file: UploadFile | None = File(None)) -> dict:
     try:
-        if type(item) == UploadFile:
-            src = file
+        if file is not None:
+            src = file.file
+        elif url is not None:
+            src = url
         else:
             raise HTTPException(status_code=400, detail="No URL or file found in request")
 

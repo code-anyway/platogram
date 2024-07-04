@@ -1,9 +1,8 @@
 from hashlib import sha256
-from io import TextIOWrapper
 from pathlib import Path
 import platogram as plato
 import os
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, SpooledTemporaryFile
 from typing import Tuple
 from urllib import request
 
@@ -12,8 +11,8 @@ CACHE_DIR = Path("./.platogram-cache")
 ## Handle cache rotation
 
 
-def make_file_name(src: str | TextIOWrapper):
-    if type(src) == TextIOWrapper:
+def make_file_name(src: str | SpooledTemporaryFile):
+    if type(src) == SpooledTemporaryFile:
         src = src.read()
     else:
         src = src.encode()
@@ -25,22 +24,23 @@ def is_valid_url(url: str) -> bool:
     try:
         res = request.urlopen(url)
         return res.getcode() == 200
-    except urllib.request.HTTPError as e:
+    except request.HTTPError as e:
         raise e
 
 
-async def get_audio_url(src: str | TextIOWrapper, temp_dir: TemporaryDirectory | None) -> str:
+async def get_audio_url(src: str | SpooledTemporaryFile, temp_dir: str | None) -> str:
     if type(src) == str and is_valid_url(src):
         return src
     else:
+        dest_file =  f"{temp_dir}/{sha256(src.read()).hexdigest()}"
         src.seek(0)
-        dest_file =  f"{temp_dir.name}/{sha256(src.read()).hexdigest()}"
-        await src.save(dest_file)
-        return f"file://{os.path.abs(dest_file)}"
+        with open(dest_file, "wb") as content:
+            content.write(src.read())
+        return f"file://{os.path.abspath(dest_file)}"
 
 
 async def summarize_audio(
-        src: str | TextIOWrapper,
+        src: str | SpooledTemporaryFile,
         anthropic_model: str = "claude-3-5-sonnet",
         assembly_ai_model: str = "best"
     ) -> Tuple[str, plato.Content]:
@@ -56,7 +56,6 @@ async def summarize_audio(
     else:
         with TemporaryDirectory() as temp_dir:
             url = await get_audio_url(src, temp_dir)
-            print(url)
 
             transcript = plato.extract_transcript(url, asr)
         content = plato.index(transcript, llm)
