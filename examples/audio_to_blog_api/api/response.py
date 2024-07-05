@@ -1,4 +1,4 @@
-from platogram import Content, User
+from platogram import Content
 
 
 def format_time(ms):

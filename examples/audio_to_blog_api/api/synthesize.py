@@ -1,19 +1,19 @@
 from hashlib import sha256
 from pathlib import Path
 import platogram as plato
-from platogram.types import User, Assistant
 import os
+from tarfile import ExFileObject
 from tempfile import TemporaryDirectory, SpooledTemporaryFile
-from typing import Sequence, Literal
+from typing import Literal
 from urllib.parse import urlparse
 
 
 CACHE_DIR = Path("./.platogram-cache")
-## Handle cache rotation
+# Handle cache rotation
 
 
-def make_file_name(src: str | SpooledTemporaryFile):
-    if type(src) == SpooledTemporaryFile:
+def make_file_name(src: str | SpooledTemporaryFile | ExFileObject) -> str:
+    if type(src) != str:
         src = src.read()
     else:
         src = src.encode()
@@ -29,7 +29,7 @@ def is_uri(src: str) -> bool:
         return False
 
 
-async def get_audio_url(src: str | SpooledTemporaryFile, temp_dir: str | None) -> str:
+async def get_audio_url(src: str | SpooledTemporaryFile | ExFileObject, temp_dir: str | None) -> str:
     if type(src) == str and is_uri(src):
         return src
     else:
@@ -72,20 +72,20 @@ async def summarize_audio(
 
 
 async def prompt_content(
-    src: str | SpooledTemporaryFile,
-    prompt: Sequence[Assistant | User],
+    content: list[plato.Content],
+    prompt: str,
     anthropic_model: str = "claude-3-5-sonnet",
-    content_size: Literal["small", "medium", "large"] = "small"
+    context_size: Literal["small", "medium", "large"] = "small"
 ) -> str:
-    content = summarize_audio(src)
 
     llm = plato.llm.get_model(
         f"anthropic/{anthropic_model}",
         os.environ["ANTHROPIC_API_KEY"]
     )
+
     response = llm.prompt(
             prompt=prompt,
             context=content,
-            context_size=content_size,
+            context_size=context_size,
     )
     return response
