@@ -9,14 +9,14 @@ def format_time(ms):
 
 
 def content_to_html(content: Content) -> str:
-    file_name, index = content
+    index = content
 
     html = f"""
         <h2>{index.title}</h2>
         <h4>{index.summary}</h4>
     """
 
-    for paragraph in index.paragraphs:
+    for paragraph in index.passages:
         html += f"<p>{paragraph}</p>"
 
     html += """

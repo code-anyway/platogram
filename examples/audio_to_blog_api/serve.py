@@ -45,7 +45,7 @@ async def generate_post(
     url: str | None = Form(None), file: UploadFile | None = File(None)
 ) -> dict:
     try:
-        src = get_src(url, file)
+        src = get_src(url, file)[0]
 
         content = await summarize_audio(src)
 
@@ -68,6 +68,10 @@ async def refine_post(
         content = [await summarize_audio(src) for src in sources]
 
         response = await prompt_content(content, prompt)
-        return {"response": response}
+
+        prompt = f"return only html code to acuratelly represent a blog post on the following text:\n{response}"
+        html_content = await prompt_content(content, prompt)
+
+        return {"html": html_content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

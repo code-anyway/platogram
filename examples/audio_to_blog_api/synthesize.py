@@ -1,6 +1,7 @@
 from hashlib import sha256
 from pathlib import Path
 import platogram as plato
+from platogram.types import Content
 import os
 from tarfile import ExFileObject
 from tempfile import TemporaryDirectory, SpooledTemporaryFile
@@ -13,7 +14,7 @@ CACHE_DIR = Path("./.platogram-cache")
 
 
 def make_file_name(src: str | SpooledTemporaryFile | ExFileObject) -> str:
-    if isinstance(src, str):
+    if not isinstance(src, str):
         src = src.read()
     else:
         src = src.encode()
@@ -46,7 +47,7 @@ async def summarize_audio(
     src: str | SpooledTemporaryFile,
     anthropic_model: str = "claude-3-5-sonnet",
     assembly_ai_model: str = "best",
-) -> plato.Content:
+) -> Content:
     llm = plato.llm.get_model(
         f"anthropic/{anthropic_model}", os.environ["ANTHROPIC_API_KEY"]
     )
@@ -59,7 +60,7 @@ async def summarize_audio(
     cache_file = CACHE_DIR / f"{make_file_name(src)}.json"
 
     if cache_file.exists():
-        content = plato.Content.model_validate_json(open(cache_file).read())
+        content = Content.model_validate_json(open(cache_file).read())
     else:
         with TemporaryDirectory() as temp_dir:
             url = await get_audio_url(src, temp_dir)
@@ -72,7 +73,7 @@ async def summarize_audio(
 
 
 async def prompt_content(
-    content: list[plato.Content],
+    content: list[Content],
     prompt: str,
     anthropic_model: str = "claude-3-5-sonnet",
     context_size: Literal["small", "medium", "large"] = "small",
