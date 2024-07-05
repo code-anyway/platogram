@@ -35,3 +35,12 @@ def content_to_html(content: Content) -> str:
     html += "</details>"
 
     return html
+
+
+def extract_html(content: str) -> str:
+    start = content.find("<")
+    end = content.rfind(">")
+    if start == -1 or end == -1:
+        return content
+    else:
+        return content[start:end]

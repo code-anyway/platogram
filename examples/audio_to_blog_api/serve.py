@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
-from response import content_to_html
+from response import content_to_html, extract_html
 from synthesize import summarize_audio, prompt_content
 from tarfile import TarFile
 from tempfile import SpooledTemporaryFile
@@ -70,8 +70,11 @@ async def refine_post(
         response = await prompt_content(content, prompt)
 
         prompt = f"return only html code to acuratelly represent a blog post on the following text:\n{response}"
-        html_content = await prompt_content(content, prompt)
+        response = await prompt_content(content, prompt)
+
+        html_content = extract_html(response)
 
         return {"html": html_content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
