@@ -13,7 +13,7 @@ CACHE_DIR = Path("./.platogram-cache")
 
 
 def make_file_name(src: str | SpooledTemporaryFile | ExFileObject) -> str:
-    if type(src) != str:
+    if isinstance(src, str):
         src = src.read()
     else:
         src = src.encode()
@@ -29,11 +29,13 @@ def is_uri(src: str) -> bool:
         return False
 
 
-async def get_audio_url(src: str | SpooledTemporaryFile | ExFileObject, temp_dir: str | None) -> str:
-    if type(src) == str and is_uri(src):
+async def get_audio_url(
+    src: str | SpooledTemporaryFile | ExFileObject, temp_dir: str | None
+) -> str:
+    if isinstance(src, str) and is_uri(src):
         return src
     else:
-        dest_file =  f"{temp_dir}/{sha256(src.read()).hexdigest()}"
+        dest_file = f"{temp_dir}/{sha256(src.read()).hexdigest()}"
         src.seek(0)
         with open(dest_file, "wb") as content:
             content.write(src.read())
@@ -41,17 +43,15 @@ async def get_audio_url(src: str | SpooledTemporaryFile | ExFileObject, temp_dir
 
 
 async def summarize_audio(
-        src: str | SpooledTemporaryFile,
-        anthropic_model: str = "claude-3-5-sonnet",
-        assembly_ai_model: str = "best"
+    src: str | SpooledTemporaryFile,
+    anthropic_model: str = "claude-3-5-sonnet",
+    assembly_ai_model: str = "best",
 ) -> plato.Content:
     llm = plato.llm.get_model(
-        f"anthropic/{anthropic_model}",
-        os.environ["ANTHROPIC_API_KEY"]
+        f"anthropic/{anthropic_model}", os.environ["ANTHROPIC_API_KEY"]
     )
     asr = plato.asr.get_model(
-        f"assembly-ai/{assembly_ai_model}",
-        os.environ["ASSEMBLYAI_API_KEY"]
+        f"assembly-ai/{assembly_ai_model}", os.environ["ASSEMBLYAI_API_KEY"]
     )
 
     CACHE_DIR.mkdir(exist_ok=True)
@@ -75,17 +75,15 @@ async def prompt_content(
     content: list[plato.Content],
     prompt: str,
     anthropic_model: str = "claude-3-5-sonnet",
-    context_size: Literal["small", "medium", "large"] = "small"
+    context_size: Literal["small", "medium", "large"] = "small",
 ) -> str:
-
     llm = plato.llm.get_model(
-        f"anthropic/{anthropic_model}",
-        os.environ["ANTHROPIC_API_KEY"]
+        f"anthropic/{anthropic_model}", os.environ["ANTHROPIC_API_KEY"]
     )
 
     response = llm.prompt(
-            prompt=prompt,
-            context=content,
-            context_size=context_size,
+        prompt=prompt,
+        context=content,
+        context_size=context_size,
     )
     return response

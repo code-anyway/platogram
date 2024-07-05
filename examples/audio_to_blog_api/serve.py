@@ -11,9 +11,8 @@ app = FastAPI()
 
 
 def get_src(
-        urls: str | None = Form(None),
-        files: UploadFile | None = File(None)
-) -> str | SpooledTemporaryFile:
+    urls: str | None = Form(None), files: UploadFile | None = File(None)
+) -> List[str | SpooledTemporaryFile]:
     sources = []
 
     if files is not None:
@@ -31,11 +30,11 @@ def get_src(
 async def home() -> HTMLResponse:
     try:
         response = """
-        <h1>This is the API for platogram's audio-to-blog</h1>
-        <p>Given an HTTP POST request with an audio file (or link to one), get an HTML/Markdown blog post</p>
-        <p>Use endpoint /post for post creation. Attach application/json for a url or a file.</p>
-        <p>Use endpoint /query to create a blog post by querying an audio file</p>
-        """
+<h1>This is the API for platogram's audio-to-blog</h1>
+<p>Given an HTTP POST request with an audio file (or link to one), get an HTML/Markdown blog post</p>
+<p>Use endpoint /post for post creation. Attach application/json for a url or a file.</p>
+<p>Use endpoint /query to create a blog post by querying an audio file</p>
+"""
         return HTMLResponse(content=response)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -43,8 +42,7 @@ async def home() -> HTMLResponse:
 
 @app.post("/post")
 async def generate_post(
-        url: str | None = Form(None),
-        file: UploadFile | None = List[File(None)]
+    url: str | None = Form(None), file: UploadFile | None = File(None)
 ) -> dict:
     try:
         src = get_src(url, file)
@@ -61,9 +59,9 @@ async def generate_post(
 
 @app.post("/query")
 async def refine_post(
-        urls: str | None = Form(None),
-        file: UploadFile | None = File(None),
-        prompt: str = Form(...)
+    urls: str | None = Form(None),
+    file: UploadFile | None = File(None),
+    prompt: str = Form(...),
 ) -> dict:
     try:
         sources = get_src(urls, file)
