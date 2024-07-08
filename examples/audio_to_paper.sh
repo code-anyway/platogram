@@ -10,60 +10,70 @@ if [ -z "$ANTHROPIC_API_KEY" ]; then
     exit 1
 fi
 
-# check is ASSEMBLYAI_API_KEY is set
+echo "Indexing $URL..."
 if [ -z "$ASSEMBLYAI_API_KEY" ]; then
-    # Retrieve text from URL (subtitles, etc)
-    plato \
-        "$URL"
+    echo "ASSEMBLYAI_API_KEY is not set. Retrieving text from URL (subtitles, etc)."
+
+    if [ "$2" = "--images" ]; then
+        plato --images "$URL" > /dev/null
+    else
+        plato "$URL" > /dev/null
+    fi
 else
-    # Transcribe audio to text
-    plato \
-        --assemblyai-api-key $ASSEMBLYAI_API_KEY \
-        "$URL"
+    echo "Transcribing audio to text using AssemblyAI..."
+
+    if [ "$2" = "--images" ]; then
+        plato --images "$URL" \
+            --assemblyai-api-key $ASSEMBLYAI_API_KEY > /dev/null
+    else
+        plato "$URL" \
+            --assemblyai-api-key $ASSEMBLYAI_API_KEY > /dev/null
+    fi
 fi
 
-echo "Generating Documents..."
+echo "Fetching title, abstract, passages, and references..."
+TITLE=$(plato --title "$URL")
+ABSTRACT=$(plato --abstract "$URL")
+PASSAGES=$(plato --passages --inline-references "$URL")
+REFERENCES=$(plato --references "$URL")
 
+echo "Generating Contributors..."
+CONTRIBUTORS=$(plato \
+    --query "Thoroughly review the <context> and identify the list of contributors. Output as Markdown list: First Name, Last Name, Title, Organization. Output \"Unknown\" if the contributors are not known. In the end of the list always add \"- [Platogram](https://github.com/code-anyway/platogram), Chief of Stuff, Code Anyway, Inc.\". Start with \"## Contributors\"" \
+    --generate \
+    --context-size large \
+    --inline-references \
+    --prefill $'## Contributors\n' \
+    "$URL")
+
+echo "Generating Introduction..."
+INTRODUCTION=$(plato \
+    --query "Thoroughly review the <context> and write \"Introduction\" chapter for the paper. Make sure to include <markers>. Output as Markdown. Start with \"## Introduction\"" \
+    --generate \
+    --context-size large \
+    --inline-references \
+    --prefill $'## Introduction\n' \
+    "$URL")
+
+echo "Generating Conclusion..."
+CONCLUSION=$(plato \
+    --query "Thoroughly review the <context> and write \"Conclusion\" chapter for the paper. Make sure to include <markers>. Output as Markdown. Start with \"## Conclusion\"" \
+    --generate \
+    --context-size large \
+    --inline-references \
+    --prefill $'## Conclusion\n' \
+    "$URL")
+
+echo "Generating Documents..."
 (
-    echo -n $'\n# '
-    plato \
-        --title \
-        "$URL"
-    echo $'## Origin\n'
-    plato \
-        --origin \
-        "$URL"
-    plato \
-        --prompt "Thoroughly review the <context> and identify the list of contributors. Output as Markdown list: First Name, Last Name, Title, Organization. Output \"Unknown\" if the contributors are not known. In the end of the list always add \"- [Platogram](https://github.com/code-anyway/platogram), Chief of Stuff, Code Anyway, Inc.\". Start with \"## Contributors\"" \
-        --context-size large \
-        --inline-references \
-        --prefill $'## Contributors\n' \
-        "$URL"
-    echo $'## Abstract\n'
-    plato \
-        --abstract \
-        "$URL"
-    plato \
-        --prompt "Thoroughly review the <context> and write \"Introduction\" chapter for the paper. Make sure to include <markers>. Output as Markdown. Start with \"## Introduction\"" \
-        --context-size large \
-        --inline-references \
-        --prefill $'## Introduction\n' \
-        "$URL"
-    echo $'## Discussion\n'
-    plato \
-        --passages \
-        --inline-references \
-        "$URL"
-    plato \
-        --prompt "Thoroughly review the <context> and write \"Conclusion\" chapter for the paper. Make sure to include <markers>. Output as Markdown. Start with \"## Conclusion\"" \
-        --context-size large \
-        --inline-references \
-        --prefill $'## Conclusion\n' \
-        "$URL"
-    echo $'## References\n'
-    plato \
-        --references \
-        "$URL"
-) | pandoc \
-    -o "$(echo "$URL" | sed 's/[^a-zA-Z0-9]/_/g').docx" --from markdown \
-    -o "$(echo "$URL" | sed 's/[^a-zA-Z0-9]/_/g').pdf" --from markdown
+    echo $'# '"$TITLE"$'\n'
+    echo $'## Origin\n\n'"$URL"$'\n'
+    echo $'## Abstract\n\n'"$ABSTRACT"$'\n'
+    echo "$CONTRIBUTORS"$'\n'
+    echo "$INTRODUCTION"$'\n'
+    echo $'## Discussion\n\n'"$PASSAGES"$'\n'
+    echo "$CONCLUSION"$'\n'
+    echo $'## References\n\n'"$REFERENCES"$'\n'
+) | tee >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').docx" --from markdown) \
+       >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').pdf" --from markdown) \
+       >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').md" --from markdown) > /dev/null

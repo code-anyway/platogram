@@ -18,13 +18,19 @@ class Library(Protocol):
         self,
         query: str,
         n_results: int,
-        filter_keys: list[str] = [],
-    ) -> list[Content]: ...
+        filter_keys: list[str],
+    ) -> tuple[list[Content], list[float]]: ...
 
     def get_content(self, id: str) -> Content: ...
 
 
-def get_local(home_dir: Path = Path("./my_library")) -> Library:
-    from .local import LocalLibrary
+def get_semantic_local_chroma(home_dir: Path = Path("./my_library")) -> Library:
+    from .semantic_local_chroma import LocalChromaLibrary
 
-    return LocalLibrary(home_dir)
+    return LocalChromaLibrary(home_dir)
+
+
+def get_keyword_local_bm25(home_dir: Path = Path("./my_library")) -> Library:
+    from .keyword_local_bm25 import LocalBM25Library
+
+    return LocalBM25Library(home_dir)

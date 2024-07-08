@@ -1,12 +1,11 @@
 import os
-import re
 import json
 from pathlib import Path
 
 import chromadb
 
 from platogram.types import Content
-from platogram.utils import get_sha256_hash
+from platogram.utils import get_sha256_hash, make_filesystem_safe
 from platogram.ops import remove_markers
 
 
@@ -16,18 +15,7 @@ from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 EMBEDDING_MODEL = "text-embedding-3-large"
 
 
-def make_filesystem_safe(s):
-    # Remove leading and trailing whitespace
-    s = s.strip()
-    # Replace spaces with underscores
-    s = s.replace(" ", "_")
-    # Remove or replace invalid characters
-    s = re.sub(r"[^\w\-\.]", "", s)
-    # Optional: truncate the string to a max length, e.g., 255 characters
-    return s[:255]
-
-
-class LocalLibrary:
+class LocalChromaLibrary:
     def __init__(self, home_dir: Path):
         if not home_dir.exists():
             home_dir.mkdir(parents=True)
@@ -69,7 +57,7 @@ class LocalLibrary:
 
         self.segments.add(
             documents=[remove_markers(p) for p in content.passages],
-            metadatas=[{"id": id} for _ in content.passages],
+            metadatas=[{"id": id, "passage": p} for p in content.passages],
             ids=[get_sha256_hash(f"{id}-{p}") for p in content.passages],
         )
 
@@ -92,14 +80,25 @@ class LocalLibrary:
         self,
         query: str,
         n_results: int,
-        filter_keys: list[str] = [],
-    ) -> list[Content]:
+        filter_keys: list[str],
+    ) -> tuple[list[Content], list[float]]:
+        filter_keys = filter_keys or []
         results = self.segments.query(
             query_texts=[query],
             n_results=n_results,
             where={"id": {"$in": filter_keys}} if filter_keys else None,  # type: ignore
         )
-        return [
-            self.get_content(str(metadata["id"]))
-            for metadata in results["metadatas"][0]  # type: ignore
-        ]
+
+        retrieved_content: dict[str, Content] = {}
+        if not results or not results["metadatas"] or not results["distances"]:
+            return [], []
+
+        for metadata in results["metadatas"][0]:
+            id = str(metadata["id"])
+            passage = str(metadata["passage"])
+            if id not in retrieved_content:
+                retrieved_content[id] = self.get_content(id)
+                retrieved_content[id].passages = []
+            retrieved_content[id].passages.append(passage)
+
+        return list(retrieved_content.values()), results["distances"][0]

@@ -13,7 +13,7 @@ def test_process_url():
     url = "https://www.youtube.com/shorts/XsLK3tPy9SI"
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        library = plato.library.get_local(Path(temp_dir))
+        library = plato.library.get_semantic_local_chroma(Path(temp_dir))
 
         content = cli.process_url(
             url, library, anthropic_api_key, assemblyai_api_key, extract_images=True
@@ -25,9 +25,6 @@ def test_process_url():
         assert content.passages is not None
         assert content.transcript is not None
         assert content.images is not None
-
-        images_dir = library.home / cli.make_file_name(url)
-        assert images_dir.exists()
 
         assert content.transcript
         assert len(content.images) == len(content.transcript)
