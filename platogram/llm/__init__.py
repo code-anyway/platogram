@@ -9,6 +9,10 @@ class LanguageModel(Protocol):
         self, paragraphs: list[str], max_tokens: int = 4096, temperature: float = 0.5
     ) -> tuple[str, str]: ...
 
+    def get_chapters(
+        self, passages: list[str], max_tokens: int = 4096, temperature: float = 0.5
+    ) -> dict[int, str]: ...
+
     def get_paragraphs(
         self,
         text_with_markers: str,

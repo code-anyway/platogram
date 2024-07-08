@@ -22,6 +22,7 @@ class SpeechEvent(BaseModel):
 class Content(BaseModel):
     title: str
     summary: str
+    chapters: dict[int, str]
     passages: list[str]
     transcript: list[SpeechEvent]
     images: list[str] | None = None

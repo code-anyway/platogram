@@ -34,8 +34,9 @@ fi
 echo "Fetching title, abstract, passages, and references..."
 TITLE=$(plato --title "$URL")
 ABSTRACT=$(plato --abstract "$URL")
-PASSAGES=$(plato --passages --inline-references "$URL")
+PASSAGES=$(plato --passages --chapters --inline-references "$URL")
 REFERENCES=$(plato --references "$URL")
+CHAPTERS=$(plato --chapters "$URL")
 
 echo "Generating Contributors..."
 CONTRIBUTORS=$(plato \
@@ -70,6 +71,7 @@ echo "Generating Documents..."
     echo $'## Origin\n\n'"$URL"$'\n'
     echo $'## Abstract\n\n'"$ABSTRACT"$'\n'
     echo "$CONTRIBUTORS"$'\n'
+    echo $'## Chapters\n\n'"$CHAPTERS"$'\n'
     echo "$INTRODUCTION"$'\n'
     echo $'## Discussion\n\n'"$PASSAGES"$'\n'
     echo "$CONCLUSION"$'\n'

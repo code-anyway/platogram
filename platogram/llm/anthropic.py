@@ -143,6 +143,67 @@ You will be given a <text> that contains paragraphs enclosed in <p></p> tags and
         ), f"Expected LLM to return dict with meta information, got {meta}"
         return meta["title"], meta["summary"]
 
+    def get_chapters(
+        self, passages: list[str], max_tokens: int = 4096, temperature: float = 0.5
+    ) -> dict[int, str]:
+        system_prompt = """<role>
+You are a very capable editor, speaker, educator, and author who is really good at reading text that represents transcript of human speech and rewriting it into well-structured, information-dense written text.
+</role>
+<task>
+You will be given <passages> of text in a format "<p>text【0】text【1】... text 【2】</p>". Where each【number】is a <marker> and goes AFTER the text it references. Markers are zero-based and are in sequential order.
+
+Follow these steps to transform the <passages> into a dictionary of chapters:
+1. Read the <passages> carefully and come up with a list of <chapters> that equally cover the <passages>.
+2. Review <chapters> and <passages> and for each chapter generate <title> and first <marker> from the relevant passage and create a <chapter> object and add it to the list.
+3. Call <chapter_tool> and pass the list of <chapter> objects.
+</task>
+""".strip()
+
+        properties = {
+            "title": "Title of the chapter",
+            "marker": "Marker in format '【number】'",
+        }
+
+        tool_definition = {
+            "name": "chapter_tool",
+            "description": "Renders chapters from the <passages>.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "entities": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                name: {"type": "string", "description": description}
+                                for name, description in properties.items()
+                            },
+                            "required": list(properties.keys()),
+                        },
+                    }
+                },
+                "required": ["entities"],
+            },
+        }
+
+        text = "\n".join([f"<p>{passage}</p>" for passage in passages])
+
+        chapters = self.prompt_model(
+            system=system_prompt,
+            messages=[User(content=f"<passages>{text}</passages>")],
+            tools=[tool_definition],
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+
+        assert isinstance(
+            chapters, dict
+        ), f"Expected LLM to return dict with chapters, got {chapters}"
+        return {
+            int(re.findall(r"\d+", chapter["marker"])[0]): chapter["title"].strip()
+            for chapter in chapters["entities"]
+        }
+
     def get_paragraphs(
         self,
         text_with_markers: str,

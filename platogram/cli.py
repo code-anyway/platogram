@@ -10,6 +10,7 @@ import re
 from typing import Callable, Literal, Sequence
 from platogram.library import Library
 from platogram.utils import make_filesystem_safe
+from platogram.ops import parse
 
 
 CACHE_DIR = Path("./.platogram-cache")
@@ -136,6 +137,7 @@ def main():
     parser.add_argument("--title", action="store_true", help="Include title")
     parser.add_argument("--abstract", action="store_true", help="Include abstract")
     parser.add_argument("--passages", action="store_true", help="Include passages")
+    parser.add_argument("--chapters", action="store_true", help="Include chapters")
     parser.add_argument("--references", action="store_true", help="Include references")
     parser.add_argument("--images", action="store_true", help="Include images")
     parser.add_argument("--origin", action="store_true", help="Include origin URL")
@@ -215,8 +217,36 @@ def main():
             result += f"""{content.summary}\n\n\n\n"""
 
         if args.passages:
-            passages = "\n\n".join(content.passages)
+            passages = ""
+            if args.chapters:
+                chapters = list(content.chapters.items()) + [None]
+                for current, next in zip(chapters[:-1], chapters[1:]):
+                    assert current is not None
+                    passages += f"### {current[1]}\n\n"
+                    for passage in content.passages:
+                        passage_markers = [int(m) for m in re.findall(r"\d+", passage)]
+                        if next is None:
+                            if any(
+                                passage_marker >= current[0]
+                                for passage_marker in passage_markers
+                            ):
+                                passages += f"{passage}\n\n"
+                        else:
+                            if any(
+                                next[0] > passage_marker >= current[0]
+                                for passage_marker in passage_markers
+                            ):
+                                passages += f"{passage}\n\n"
+            else:
+                passages = "\n\n".join(content.passages)
+
             result += f"""{passages}\n\n\n\n"""
+
+        if args.chapters and not args.passages:
+            chapters = "\n".join(
+                f"- {chapter} [{i}]" for i, chapter in content.chapters.items()
+            )
+            result += f"""{chapters}\n\n\n\n"""
 
         if args.references:
             result += f"""{render_transcript(0, len(content.transcript), content.transcript, content.origin)}\n\n\n\n"""
