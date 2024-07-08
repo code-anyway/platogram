@@ -2,6 +2,7 @@ import argparse
 import sys
 from urllib.parse import urlparse
 from pathlib import Path
+from tqdm import tqdm
 import platogram as plato
 from platogram.types import User, Assistant, Content
 import platogram.ingest as ingest
@@ -68,19 +69,23 @@ def process_url(
     if library.exists(id):
         return library.get_content(id)
 
-    print(f"Extracting transcript for {url}", file=sys.stderr)
-    transcript = plato.extract_transcript(url, asr)
-    print("Indexing content", file=sys.stderr)
-    content = plato.index(transcript, llm)
-    if extract_images:
-        print("Extracting images", file=sys.stderr)
-        images_dir = library.home / id
-        images_dir.mkdir(exist_ok=True)
-        timestamps_ms = [event.time_ms for event in content.transcript]
-        images = ingest.extract_images(url, images_dir, timestamps_ms)
-        content.images = [str(image.relative_to(library.home)) for image in images]
-
-    library.put(id, content)
+    with tqdm(total=4, desc=f"Processing {url}", file=sys.stderr) as pbar:
+        transcript = plato.extract_transcript(url, asr)
+        pbar.update(1)
+        pbar.set_description("Indexing content")
+        content = plato.index(transcript, llm)
+        pbar.update(1)
+        if extract_images:
+            pbar.set_description("Extracting images")
+            images_dir = library.home / id
+            images_dir.mkdir(exist_ok=True)
+            timestamps_ms = [event.time_ms for event in content.transcript]
+            images = ingest.extract_images(url, images_dir, timestamps_ms)
+            content.images = [str(image.relative_to(library.home)) for image in images]
+            pbar.update(1)
+        pbar.set_description("Saving content")
+        library.put(id, content)
+        pbar.update(1)
 
     return content
 
