@@ -76,8 +76,6 @@ for passage in content.passages:
 ## Acknowledgments
 
 - Uses transcript and text of Chapter 1: Atoms in Motions from Feynman Lectures on Physics, [Copyright © 1963-1965, 2006, 2013 by the California Institute of Technology, Michael A. Gottlieb and Rudolf Pfeiffer](https://www.feynmanlectures.caltech.edu/III_copyright.html)
-- Uses Anthropic's Claude for advanced language processing
-- Optional integration with Assembly AI for improved transcription
 
 ## Feedback and Support
 
