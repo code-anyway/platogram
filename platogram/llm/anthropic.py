@@ -1,21 +1,18 @@
-import re
-from typing import Generator, Any
 import os
+import re
+from typing import Any, Generator, Literal, Sequence
 
 import anthropic
 from anthropic import AnthropicError
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     stop_after_delay,
-    retry_if_exception_type,
 )
-from platogram.types import Content
-from platogram.ops import render
-from typing import Literal
-from platogram.types import User, Assistant
-from typing import Sequence
 
+from platogram.ops import render
+from platogram.types import Assistant, Content, User
 
 RETRY = retry(
     stop=(stop_after_delay(300) | stop_after_attempt(5)),
@@ -142,6 +139,70 @@ You will be given a <text> that contains paragraphs enclosed in <p></p> tags and
             meta, dict
         ), f"Expected LLM to return dict with meta information, got {meta}"
         return meta["title"], meta["summary"]
+
+    def get_chapters(
+        self, passages: list[str], max_tokens: int = 4096, temperature: float = 0.5
+    ) -> dict[int, str]:
+        system_prompt = """<role>
+You are a very capable editor, speaker, educator, and author who is really good at reading text that represents transcript of human speech and rewriting it into well-structured, information-dense written text.
+</role>
+<task>
+You will be given <passages> of text in a format "<p>text【0】text【1】... text 【2】</p>". Where each【number】is a <marker> and goes AFTER the text it references. Markers are zero-based and are in sequential order.
+
+Follow these steps to transform the <passages> into a dictionary of chapters:
+1. Read the <passages> carefully and come up with a list of <chapters> that equally cover the <passages>.
+2. Review <chapters> and <passages> and for each chapter generate <title> and first <marker> from the relevant passage and create a <chapter> object and add it to the list.
+3. Call <chapter_tool> and pass the list of <chapter> objects.
+</task>
+""".strip()
+
+        properties = {
+            "title": "Title of the chapter",
+            "marker": "Marker in format '【number】'",
+        }
+
+        tool_definition = {
+            "name": "chapter_tool",
+            "description": "Renders chapters from the <passages>.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "entities": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                name: {"type": "string", "description": description}
+                                for name, description in properties.items()
+                            },
+                            "required": list(properties.keys()),
+                        },
+                    }
+                },
+                "required": ["entities"],
+            },
+        }
+
+        text = "\n".join([f"<p>{passage}</p>" for passage in passages])
+
+        chapters = self.prompt_model(
+            system=system_prompt,
+            messages=[User(content=f"<passages>{text}</passages>")],
+            tools=[tool_definition],
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+
+        assert isinstance(
+            chapters, dict
+        ), f"Expected LLM to return dict with chapters, got {chapters}"
+        assert isinstance(
+            chapters["entities"], list
+        ), f"Expected LLM to return list of chapters, got {chapters['entities']}"
+        return {
+            int(re.findall(r"\d+", chapter["marker"])[0]): chapter["title"].strip()
+            for chapter in chapters["entities"]
+        }
 
     def get_paragraphs(
         self,

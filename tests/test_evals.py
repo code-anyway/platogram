@@ -1,10 +1,9 @@
 import json
 import re
-from platogram.types import Content, User, Assistant
-
 
 import platogram as plato
 from platogram.ops import render
+from platogram.types import Assistant, Content, User
 
 CONTENT: list[str] = [
     # "https://www.youtube.com/watch?v=l8pRSuU81PU",  # Let's reproduce GPT-2

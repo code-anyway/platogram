@@ -1,16 +1,13 @@
-import os
 import json
+import os
 from pathlib import Path
 
 import chromadb
+from chromadb.utils import embedding_functions
 
+from platogram.ops import remove_markers
 from platogram.types import Content
 from platogram.utils import get_sha256_hash, make_filesystem_safe
-from platogram.ops import remove_markers
-
-
-from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
-
 
 EMBEDDING_MODEL = "text-embedding-3-large"
 
@@ -23,7 +20,7 @@ class LocalChromaLibrary:
 
         self.client = chromadb.PersistentClient(path=str(home_dir / "chroma.index"))
 
-        embedding_function = OpenAIEmbeddingFunction(
+        embedding_function = embedding_functions.OpenAIEmbeddingFunction(
             api_key=os.environ.get("OPENAI_API_KEY"), model_name=EMBEDDING_MODEL
         )
         self.content = self.client.get_or_create_collection(

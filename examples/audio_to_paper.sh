@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 URL="$1"
 
 # check if ANTHROPIC_API_KEY is set
@@ -23,19 +25,18 @@ else
     echo "Transcribing audio to text using AssemblyAI..."
 
     if [ "$2" = "--images" ]; then
-        plato --images "$URL" \
-            --assemblyai-api-key $ASSEMBLYAI_API_KEY > /dev/null
+        plato --images "$URL" --assemblyai-api-key $ASSEMBLYAI_API_KEY > /dev/null
     else
-        plato "$URL" \
-            --assemblyai-api-key $ASSEMBLYAI_API_KEY > /dev/null
+        plato "$URL" --assemblyai-api-key $ASSEMBLYAI_API_KEY > /dev/null
     fi
 fi
 
 echo "Fetching title, abstract, passages, and references..."
 TITLE=$(plato --title "$URL")
 ABSTRACT=$(plato --abstract "$URL")
-PASSAGES=$(plato --passages --inline-references "$URL")
+PASSAGES=$(plato --passages --chapters --inline-references "$URL")
 REFERENCES=$(plato --references "$URL")
+CHAPTERS=$(plato --chapters "$URL")
 
 echo "Generating Contributors..."
 CONTRIBUTORS=$(plato \
@@ -70,6 +71,7 @@ echo "Generating Documents..."
     echo $'## Origin\n\n'"$URL"$'\n'
     echo $'## Abstract\n\n'"$ABSTRACT"$'\n'
     echo "$CONTRIBUTORS"$'\n'
+    echo $'## Chapters\n\n'"$CHAPTERS"$'\n'
     echo "$INTRODUCTION"$'\n'
     echo $'## Discussion\n\n'"$PASSAGES"$'\n'
     echo "$CONCLUSION"$'\n'

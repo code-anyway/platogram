@@ -1,16 +1,17 @@
 import argparse
-import sys
-from urllib.parse import urlparse
-from pathlib import Path
-from tqdm import tqdm
-import platogram as plato
-from platogram.types import User, Assistant, Content
-import platogram.ingest as ingest
 import re
+import sys
+from pathlib import Path
 from typing import Callable, Literal, Sequence
-from platogram.library import Library
-from platogram.utils import make_filesystem_safe
+from urllib.parse import urlparse
 
+from tqdm import tqdm
+
+import platogram as plato
+import platogram.ingest as ingest
+from platogram.library import Library
+from platogram.types import Assistant, Content, User
+from platogram.utils import make_filesystem_safe
 
 CACHE_DIR = Path("./.platogram-cache")
 
@@ -136,6 +137,7 @@ def main():
     parser.add_argument("--title", action="store_true", help="Include title")
     parser.add_argument("--abstract", action="store_true", help="Include abstract")
     parser.add_argument("--passages", action="store_true", help="Include passages")
+    parser.add_argument("--chapters", action="store_true", help="Include chapters")
     parser.add_argument("--references", action="store_true", help="Include references")
     parser.add_argument("--images", action="store_true", help="Include images")
     parser.add_argument("--origin", action="store_true", help="Include origin URL")
@@ -214,9 +216,36 @@ def main():
         if args.abstract:
             result += f"""{content.summary}\n\n\n\n"""
 
+        def get_chapter(passage_marker: int) -> int | None:
+            chapter_markers = list(content.chapters.keys())
+            for start, end in zip(chapter_markers[:-1], chapter_markers[1:]):
+                if start <= passage_marker < end:
+                    return start
+            if passage_marker >= chapter_markers[-1]:
+                return chapter_markers[-1]
+            return None
+
         if args.passages:
-            passages = "\n\n".join(content.passages)
+            passages = ""
+            if args.chapters:
+                current_chapter = None
+                for passage in content.passages:
+                    passage_markers = [int(m) for m in re.findall(r"\d+", passage)]
+                    chapter_marker = get_chapter(passage_markers[0])
+                    if chapter_marker is not None and chapter_marker != current_chapter:
+                        passages += f"### {content.chapters[chapter_marker]}\n\n"
+                        current_chapter = chapter_marker
+                    passages += f"{passage}\n\n"
+            else:
+                passages = "\n\n".join(content.passages)
+
             result += f"""{passages}\n\n\n\n"""
+
+        if args.chapters and not args.passages:
+            chapters = "\n".join(
+                f"- {chapter} [{i}]" for i, chapter in content.chapters.items()
+            )
+            result += f"""{chapters}\n\n\n\n"""
 
         if args.references:
             result += f"""{render_transcript(0, len(content.transcript), content.transcript, content.origin)}\n\n\n\n"""

@@ -10,6 +10,14 @@ def test_get_meta() -> None:
     assert meta
 
 
+def test_get_chapters() -> None:
+    llm = platogram.llm.get_model("anthropic/claude-3-5-sonnet")
+    chapters = llm.get_chapters(
+        ["First Asset Sentence one and two【0】", "First Asset Sentence three【2】"]
+    )
+    assert chapters
+
+
 def test_prompt() -> None:
     llm = platogram.llm.get_model("anthropic/claude-3-5-sonnet")
 
@@ -45,6 +53,10 @@ def test_render_context() -> None:
                 "First Asset Sentence one and two【0】",
                 "First Asset Sentence three【2】",
             ],
+            chapters={
+                0: "First Asset Sentence one and two",
+                2: "First Asset Sentence three",
+            },
         ),
         Content(
             title="Second Asset",
@@ -58,6 +70,10 @@ def test_render_context() -> None:
                 "Second Asset Sentence one and two【0】",
                 "Second Asset Sentence three【2】",
             ],
+            chapters={
+                0: "Second Asset Sentence one and two",
+                2: "Second Asset Sentence three",
+            },
         ),
     ]
 
