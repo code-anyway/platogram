@@ -1,21 +1,18 @@
-import re
-from typing import Generator, Any
 import os
+import re
+from typing import Any, Generator, Literal, Sequence
 
 import anthropic
 from anthropic import AnthropicError
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     stop_after_delay,
-    retry_if_exception_type,
 )
-from platogram.types import Content
-from platogram.ops import render
-from typing import Literal
-from platogram.types import User, Assistant
-from typing import Sequence
 
+from platogram.ops import render
+from platogram.types import Assistant, Content, User
 
 RETRY = retry(
     stop=(stop_after_delay(300) | stop_after_attempt(5)),
@@ -199,6 +196,9 @@ Follow these steps to transform the <passages> into a dictionary of chapters:
         assert isinstance(
             chapters, dict
         ), f"Expected LLM to return dict with chapters, got {chapters}"
+        assert isinstance(
+            chapters["entities"], list
+        ), f"Expected LLM to return list of chapters, got {chapters['entities']}"
         return {
             int(re.findall(r"\d+", chapter["marker"])[0]): chapter["title"].strip()
             for chapter in chapters["entities"]

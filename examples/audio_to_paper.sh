@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 URL="$1"
 
 # check if ANTHROPIC_API_KEY is set
@@ -23,11 +25,9 @@ else
     echo "Transcribing audio to text using AssemblyAI..."
 
     if [ "$2" = "--images" ]; then
-        plato --images "$URL" \
-            --assemblyai-api-key $ASSEMBLYAI_API_KEY > /dev/null
+        plato --images "$URL" --assemblyai-api-key $ASSEMBLYAI_API_KEY > /dev/null
     else
-        plato "$URL" \
-            --assemblyai-api-key $ASSEMBLYAI_API_KEY > /dev/null
+        plato "$URL" --assemblyai-api-key $ASSEMBLYAI_API_KEY > /dev/null
     fi
 fi
 
