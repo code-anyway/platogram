@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
-from fastapi.responses import HTMLResponse
-from response import content_to_html, extract_html
+from fastapi.responses import StreamingResponse
+import logging
+from response import content_to_html, extract_html, HTML_to_format
 from synthesize import summarize_audio, prompt_content
 from tarfile import TarFile
 from tempfile import SpooledTemporaryFile
@@ -8,6 +9,7 @@ from typing import List
 
 
 app = FastAPI()
+logger = logging.getLogger(__name__)
 
 
 def get_src(
@@ -26,55 +28,51 @@ def get_src(
     return sources
 
 
-@app.get("/")
-async def home() -> HTMLResponse:
-    try:
-        response = """
-<h1>This is the API for platogram's audio-to-blog</h1>
-<p>Given an HTTP POST request with an audio file (or link to one), get an HTML/Markdown blog post</p>
-<p>Use endpoint /post for post creation. Attach application/json for a url or a file.</p>
-<p>Use endpoint /query to create a blog post by querying an audio file</p>
-"""
-        return HTMLResponse(content=response)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.post("/post")
 async def generate_post(
-    url: str | None = Form(None), file: UploadFile | None = File(None)
-) -> dict:
-    try:
-        src = get_src(url, file)[0]
-
-        content = await summarize_audio(src)
-
-        html_content = content_to_html(content)
-
-        response = {"html": html_content}
-        return response
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/query")
-async def refine_post(
-    urls: str | None = Form(None),
+    url: str | None = Form(None),
     file: UploadFile | None = File(None),
-    prompt: str = Form(...),
+    prompt: str | None = Form(None),
 ) -> dict:
     try:
-        sources = get_src(urls, file)
-        content = [await summarize_audio(src) for src in sources]
+        sources = get_src(url, file)
 
-        response = await prompt_content(content, prompt)
+        if prompt is not None:
+            content = [await summarize_audio(src) for src in sources]
 
-        prompt = f"return only html code to acuratelly represent a blog post on the following text:\n{response}"
-        response = await prompt_content(content, prompt)
+            response = await prompt_content(content, prompt)
 
-        html_content = extract_html(response)
+            prompt = f"return only html to acuratelly represent a blog post on the following text:\n{response}"
+            response = await prompt_content(content, prompt)
+
+            html_content = extract_html(response)
+        else:
+            src = sources[0]
+            content = await summarize_audio(src)
+
+            html_content = content_to_html(content)
 
         return {"html": html_content}
     except Exception as e:
+        logger.error(e)
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.post("/post/convertHTML")
+async def convert_HTML(
+    content: str = Form(...), dest_type: str = Form(...)
+) -> StreamingResponse:
+    async def result_generator():
+        converted_result = HTML_to_format(content, dest_type, ".platogram-cache")
+        with open(converted_result, "rb") as fd:
+            while True:
+                data = fd.read(1024)
+                if not data:
+                    break
+                yield data
+
+    try:
+        return StreamingResponse(result_generator())
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,4 +1,6 @@
 from platogram import Content
+from pypandoc import convert_text
+from fpdf import FPDF
 
 
 def format_time(ms):
@@ -43,4 +45,16 @@ def extract_html(content: str) -> str:
     if start == -1 or end == -1:
         return content
     else:
-        return content[start:end]
+        return content[start : end + 1]
+
+
+def HTML_to_format(content: str, format_type: str, dest_dir: str) -> str:
+    dest_file = f"{dest_dir}/blog.{format_type}"
+    if format_type == "pdf":
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.write_html(content.replace("【", "{").replace("】", "}"))
+        pdf.output(dest_file)
+    else:
+        _ = convert_text(content, format_type, format="html", outputfile=dest_file)
+    return dest_file

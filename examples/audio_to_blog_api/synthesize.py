@@ -26,7 +26,7 @@ def is_uri(src: str) -> bool:
     try:
         result = urlparse(src)
         return all([result.scheme, result.netloc, result.path])
-    except:
+    except Exception as _:
         return False
 
 
