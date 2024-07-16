@@ -259,9 +259,6 @@ Follow these steps to rewrite the <transcript> and keep every <marker>:
         output = ""
 
         for content in context:
-            text = render(
-                {i + base: event.text for i, event in enumerate(content.transcript)}
-            )
             paragraphs = [
                 re.sub(r"【(\d+)】", lambda m: f"【{int(m.group(1))+base}】", paragraph)
                 for paragraph in content.passages
@@ -281,6 +278,9 @@ Follow these steps to rewrite the <transcript> and keep every <marker>:
                 output += "\n</paragraphs>\n"
 
             if context_size == "medium" or context_size == "large":
+                text = render(
+                    {i + base: event.text for i, event in enumerate(content.transcript)}
+                )
                 output += f"<text>{text}</text>\n"
 
             output += "</content>\n"

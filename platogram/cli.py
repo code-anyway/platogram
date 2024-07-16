@@ -231,7 +231,7 @@ def main():
                 current_chapter = None
                 for passage in content.passages:
                     passage_markers = [int(m) for m in re.findall(r"【(\d+)】", passage)]
-                    chapter_marker = get_chapter(passage_markers[0])
+                    chapter_marker = get_chapter(passage_markers[0]) if passage_markers else None
                     if chapter_marker is not None and chapter_marker != current_chapter:
                         passages += f"### {content.chapters[chapter_marker]}\n\n"
                         current_chapter = chapter_marker

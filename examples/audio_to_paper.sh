@@ -77,5 +77,5 @@ echo "Generating Documents..."
     echo "$CONCLUSION"$'\n'
     echo $'## References\n\n'"$REFERENCES"$'\n'
 ) | tee >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').docx" --from markdown) \
-       >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').pdf" --from markdown) \
+       >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').pdf" --from markdown --pdf-engine=xelatex) \
        >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').md" --from markdown) > /dev/null
