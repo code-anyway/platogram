@@ -34,17 +34,17 @@ fi
 echo "Fetching title, abstract, passages, and references..."
 TITLE=$(plato --title "$URL")
 ABSTRACT=$(plato --abstract "$URL")
-PASSAGES=$(plato --passages --chapters --inline-references "$URL")
+PASSAGES=$(plato --passages --chapters "$URL")
 REFERENCES=$(plato --references "$URL")
 CHAPTERS=$(plato --chapters "$URL")
 
 echo "Generating Contributors..."
 CONTRIBUTORS=$(plato \
-    --query "Thoroughly review the <context> and identify the list of contributors. Output as Markdown list: First Name, Last Name, Title, Organization. Output \"Unknown\" if the contributors are not known. In the end of the list always add \"- [Platogram](https://github.com/code-anyway/platogram), Chief of Stuff, Code Anyway, Inc.\". Start with \"## Contributors\"" \
+    --query "Thoroughly review the <context> and identify the list of contributors. Output as Markdown list: First Name, Last Name, Title, Organization. Output \"Unknown\" if the contributors are not known. In the end of the list always add \"- [Platogram](https://github.com/code-anyway/platogram), Chief of Stuff, Code Anyway, Inc.\". Start with \"## Contributors, Acknowledgements, Mentions\"" \
     --generate \
     --context-size large \
     --inline-references \
-    --prefill $'## Contributors\n' \
+    --prefill $'## Contributors Acknowledgements, Mentions\n' \
     "$URL")
 
 echo "Generating Introduction..."
@@ -75,7 +75,7 @@ echo "Generating Documents..."
     echo "$INTRODUCTION"$'\n'
     echo $'## Discussion\n\n'"$PASSAGES"$'\n'
     echo "$CONCLUSION"$'\n'
-    echo $'## References\n\n'"$REFERENCES"$'\n'
-) | tee >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').docx" --from markdown) \
-       >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').pdf" --from markdown --pdf-engine=xelatex) \
-       >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').md" --from markdown) > /dev/null
+#    echo $'## References\n\n'"$REFERENCES"$'\n'
+) | sed -E 's/\[\[([0-9]+)\]\]\([^)]+\)//g' | sed -E 's/\[([0-9]+)\]//g' | tee >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').docx" --from markdown) \
+                                                                           >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').pdf" --from markdown --pdf-engine=xelatex) \
+                                                                           >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').md" --from markdown) > /dev/null
