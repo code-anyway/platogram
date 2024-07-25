@@ -76,6 +76,6 @@ echo "Generating Documents..."
     echo $'## Discussion\n\n'"$PASSAGES"$'\n'
     echo "$CONCLUSION"$'\n'
 #    echo $'## References\n\n'"$REFERENCES"$'\n'
-) | sed -E 's/\[\[([0-9]+)\]\]\([^)]+\)//g' | sed -E 's/\[([0-9]+)\]//g' | tee >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').docx" --from markdown) \
+) | sed -E 's/\[\[([0-9]+)\]\]\([^)]+\)/ /g' | sed -E 's/\[([0-9]+)\]/ /g' | tee >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').docx" --from markdown) \
                                                                            >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').pdf" --from markdown --pdf-engine=xelatex) \
                                                                            >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').md" --from markdown) > /dev/null

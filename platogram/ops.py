@@ -167,7 +167,7 @@ def get_paragraphs(
                     )
                 )
 
-            if i < len(chunks) - 1:
+            if i < len(chunks) - 1 and paragraphs:
                 paragraphs.pop()
                 # discard paragraphs without markers
                 while paragraphs and not re.findall(r"【(\d+)】", paragraphs[-1]):
