@@ -1,8 +1,15 @@
 import json
 from pathlib import Path
 
-import bm25s  # type: ignore
-import Stemmer  # type: ignore
+try:
+    import bm25s  # type: ignore
+except ImportError:
+    pass
+
+try:
+    import Stemmer  # type: ignore
+except ImportError:
+    pass
 
 from platogram.types import Content
 from platogram.utils import make_filesystem_safe
