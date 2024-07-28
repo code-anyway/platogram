@@ -34,3 +34,9 @@ def get_keyword_local_bm25(home_dir: Path = Path("./my_library")) -> Library:
     from .keyword_local_bm25 import LocalBM25Library
 
     return LocalBM25Library(home_dir)
+
+
+def get_local_dumb(home_dir: Path = Path("./my_library")) -> Library:
+    from .local_dumb import LocalDumbLibrary
+
+    return LocalDumbLibrary(home_dir)

@@ -12,7 +12,6 @@ plato = "platogram.cli:main"
 [tool.poetry.dependencies]
 python = ">=3.10"
 yt-dlp = ">=2024.03.10"
-chromadb = ">=0.4.15"
 anthropic = ">=0.21.3"
 requests = "^2.31.0"
 assemblyai = "^0.26.0"

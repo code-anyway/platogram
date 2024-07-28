@@ -2,8 +2,15 @@ import json
 import os
 from pathlib import Path
 
-import chromadb
-from chromadb.utils import embedding_functions
+try:
+    import chromadb
+except ImportError:
+    pass
+
+try:
+    from chromadb.utils import embedding_functions
+except ImportError:
+    pass
 
 from platogram.ops import remove_markers
 from platogram.types import Content
