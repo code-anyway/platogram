@@ -143,8 +143,8 @@ def main():
     parser.add_argument("--origin", action="store_true", help="Include origin URL")
     parser.add_argument(
         "--retrieval-method",
-        choices=["keyword", "semantic"],
-        default="keyword",
+        choices=["keyword", "semantic", "dumb"],
+        default="dumb",
         help="Retrieval method",
     )
     parser.add_argument(
@@ -161,6 +161,8 @@ def main():
         library = plato.library.get_semantic_local_chroma(CACHE_DIR)
     elif args.retrieval_method == "keyword":
         library = plato.library.get_keyword_local_bm25(CACHE_DIR)
+    elif args.retrieval_method == "dumb":
+        library = plato.library.get_local_dumb(CACHE_DIR)
     else:
         raise ValueError(f"Invalid retrieval method: {args.retrieval_method}")
 
