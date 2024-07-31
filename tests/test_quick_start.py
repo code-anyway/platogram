@@ -9,10 +9,10 @@ def test_quick_start() -> None:
     asr = plato.asr.get_model("assembly-ai/best")
 
     url = "https://www.youtube.com/shorts/XsLK3tPy9SI"
-    doc = plato.extract_transcript(url, asr)
+    doc = plato.extract_transcript(url, asr, lang="en")
     indexed_doc = plato.index(doc, llm)
 
     query = "Explain this to a 5 year old"
-    response = llm.prompt(query, context=[indexed_doc])
+    response = llm.prompt(query, context=[indexed_doc], lang="en")
 
     assert re.findall(r"【\d+】", response)

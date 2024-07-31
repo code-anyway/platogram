@@ -58,7 +58,11 @@ def process_url(
     anthropic_api_key: str,
     assemblyai_api_key: str | None = None,
     extract_images: bool = False,
+    lang: str | None = None,
 ) -> Content:
+    if not lang:
+        lang = "en"
+
     llm = plato.llm.get_model("anthropic/claude-3-5-sonnet", anthropic_api_key)
     asr = (
         plato.asr.get_model("assembly-ai/best", assemblyai_api_key)
@@ -71,10 +75,10 @@ def process_url(
         return library.get_content(id)
 
     with tqdm(total=4, desc=f"Processing {url}", file=sys.stderr) as pbar:
-        transcript = plato.extract_transcript(url, asr)
+        transcript = plato.extract_transcript(url, asr, lang=lang)
         pbar.update(1)
         pbar.set_description("Indexing content")
-        content = plato.index(transcript, llm)
+        content = plato.index(transcript, llm, lang=lang)
         pbar.update(1)
         if extract_images:
             pbar.set_description("Extracting images")
@@ -121,6 +125,7 @@ def main():
         nargs="*",
         help="URLs and files to query, if none provided, will use all content",
     )
+    parser.add_argument("--lang", help="Content language: en, es")
     parser.add_argument("--anthropic-api-key", help="Anthropic API key")
     parser.add_argument("--assemblyai-api-key", help="AssemblyAI API key (optional)")
     parser.add_argument(
@@ -157,6 +162,11 @@ def main():
     )
     args = parser.parse_args()
 
+    if args.lang:
+        lang = args.lang
+    else:
+        lang = "en"
+
     if args.retrieval_method == "semantic":
         library = plato.library.get_semantic_local_chroma(CACHE_DIR)
     elif args.retrieval_method == "keyword":
@@ -178,6 +188,7 @@ def main():
                 args.anthropic_api_key,
                 args.assemblyai_api_key,
                 extract_images=args.images,
+                lang=lang,
             )
             for url_or_file in args.inputs
         ]
@@ -237,9 +248,11 @@ def main():
                     if chapter_marker is not None and chapter_marker != current_chapter:
                         passages += f"### {content.chapters[chapter_marker]}\n\n"
                         current_chapter = chapter_marker
-                    passages += f"{passage}\n\n"
+                    passages += f"{passage.strip()}\n\n"
             else:
-                passages = "\n\n".join(content.passages)
+                passages = "\n\n".join(
+                    passage.strip() for passage in content.passages
+                )
 
             result += f"""{passages}\n\n\n\n"""
 
