@@ -34,7 +34,7 @@ def has_subtitles(url: str) -> bool:
     return bool(get_metadata(url).get("subtitles", {}))
 
 
-def subtitle_language(url: str) -> str:
+def get_subtitle_languages(url: str) -> list[str]:
     if not has_subtitles(url):
         raise ValueError(f"No subtitles found for {url}")
 
@@ -42,14 +42,18 @@ def subtitle_language(url: str) -> str:
     if not all_languages:
         raise ValueError(f"No subtitles found for {url}")
 
-    for lang in all_languages:
-        if lang.lower().startswith("en"):
-            return lang
-    return all_languages[0]
+    return all_languages
 
 
-def download_subtitles(url: str, output_dir: Path) -> Path:
-    lang = subtitle_language(url)
+def download_subtitles(url: str, output_dir: Path, lang: str | None = None) -> Path:
+    if not lang:
+        lang = "en"
+
+    for subtitle_lang in get_subtitle_languages(url):
+        if subtitle_lang.lower().startswith(lang.lower()[:2]):
+            lang = subtitle_lang
+            break
+
     with YoutubeDL(
         {
             "writesubtitles": True,
@@ -194,7 +198,7 @@ def extract_images(
 
 
 def extract_transcript(
-    url: str, asr_model: ASRModel | None = None
+    url: str, asr_model: ASRModel | None = None, lang: str | None = None
 ) -> list[SpeechEvent]:
     """
     Slurps content from a given URL and returns a list of SpeechEvent objects.
@@ -223,9 +227,11 @@ def extract_transcript(
             speech_events = parse_waffly(download_file(url, Path(temp_dir)))
         elif asr_model is not None:
             file = download_audio(url, Path(temp_dir))
-            speech_events = asr_model.transcribe(file)
+            speech_events = asr_model.transcribe(file, lang=lang)
         elif has_subtitles(url):
-            speech_events = parse_subtitles(download_subtitles(url, Path(temp_dir)))
+            speech_events = parse_subtitles(
+                download_subtitles(url, Path(temp_dir), lang=lang)
+            )
         else:
             raise ValueError("No subtitles found and no ASR model provided.")
 

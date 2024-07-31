@@ -6,11 +6,11 @@ class LanguageModel(Protocol):
     def count_tokens(self, text: str) -> int: ...
 
     def get_meta(
-        self, paragraphs: list[str], max_tokens: int = 4096, temperature: float = 0.5
+        self, paragraphs: list[str], max_tokens: int = 4096, temperature: float = 0.5, lang: str | None = None
     ) -> tuple[str, str]: ...
 
     def get_chapters(
-        self, passages: list[str], max_tokens: int = 4096, temperature: float = 0.5
+        self, passages: list[str], max_tokens: int = 4096, temperature: float = 0.5, lang: str | None = None
     ) -> dict[int, str]: ...
 
     def get_paragraphs(
@@ -19,6 +19,7 @@ class LanguageModel(Protocol):
         examples: dict[str, list[str]],
         max_tokens: int = 4096,
         temperature: float = 0.5,
+        lang: str | None = None
     ) -> list[str]: ...
 
     def prompt_model(
@@ -39,6 +40,7 @@ class LanguageModel(Protocol):
         context_size: Literal["small", "medium", "large"] = "small",
         max_tokens: int = 4096,
         temperature: float = 0.5,
+        lang: str | None = None,
     ) -> str: ...
 
     def render_context(

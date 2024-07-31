@@ -98,23 +98,55 @@ class Model:
         return stream_text()
 
     def get_meta(
-        self, paragraphs: list[str], max_tokens: int = 4096, temperature: float = 0.5
+        self,
+        paragraphs: list[str],
+        max_tokens: int = 4096,
+        temperature: float = 0.5,
+        lang: str | None = None,
     ) -> tuple[str, str]:
-        system_prompt = """<role>
+        if not lang:
+            lang = "en"
+
+        system_prompt = {
+            "en": """<role>
 You are a very capable editor, speaker, educator, and author with a knack for coming up with meta information about the content.
 </role>
 <task>
 You will be given a <text> that contains paragraphs enclosed in <p></p> tags and you will need to come up with meta information about the content.
 </task>
+""".strip(),
+            "es": """<role>
+Eres un editor, orador, educador y autor muy capaz con un don para crear metainformación sobre el contenido.
+</role>
+<task>
+Se te dará un <text> que contiene párrafos encerrados en etiquetas <p></p> y tendrás que crear metainformación sobre el contenido.
+</task>
 """.strip()
+        }
+
+        title = {
+            "en": "Come up with the title which speaks to the essence of the content. Use simple language.",
+            "es": "Crea un título que refleje la esencia del contenido. Utiliza un lenguaje sencillo."
+        }
+
+        summary = {
+            "en": "Distill the key insights and express them as a short story using simple language. Make sure to cover all parts of the summary.",
+            "es": "Destila las ideas principales y exprésalas como un cuento corto usando un lenguaje sencillo. Asegúrate de cubrir todas las partes del resumen."
+        }
+
         properties = {
-            "title": "Come up with the title which speaks to the essence of the content. Use simple language.",
-            "summary": "Distill the key insights and express them as a short story using simple language. Make sure to cover all parts of the summary.",
+            "title": title[lang],
+            "summary": summary[lang],
+        }
+        
+        description = {
+            "en": "Renders meta information about the content.",
+            "es": "Genera metainformación sobre el contenido.",
         }
 
         tool_definition = {
             "name": "render_meta",
-            "description": "Renders meta information about the content.",
+            "description": description[lang],
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -128,7 +160,7 @@ You will be given a <text> that contains paragraphs enclosed in <p></p> tags and
         text = "\n".join([f"<p>{paragraph}</p>" for paragraph in paragraphs])
 
         meta = self.prompt_model(
-            system=system_prompt,
+            system=system_prompt[lang],
             messages=[User(content=f"<text>{text}</text>")],
             tools=[tool_definition],
             max_tokens=max_tokens,
@@ -141,9 +173,17 @@ You will be given a <text> that contains paragraphs enclosed in <p></p> tags and
         return meta["title"], meta["summary"]
 
     def get_chapters(
-        self, passages: list[str], max_tokens: int = 4096, temperature: float = 0.5
+        self,
+        passages: list[str],
+        max_tokens: int = 4096,
+        temperature: float = 0.5,
+        lang: str | None = None,
     ) -> dict[int, str]:
-        system_prompt = """<role>
+        if not lang:
+            lang = "en"
+
+        system_prompt = {
+            "en": """<role>
 You are a very capable editor, speaker, educator, and author who is really good at reading text that represents transcript of human speech and rewriting it into well-structured, information-dense written text.
 </role>
 <task>
@@ -154,16 +194,41 @@ Follow these steps to transform the <passages> into a dictionary of chapters:
 2. Review <chapters> and <passages> and for each chapter generate <title> and first <marker> from the relevant passage and create a <chapter> object and add it to the list.
 3. Call <chapter_tool> and pass the list of <chapter> objects.
 </task>
-""".strip()
+""".strip(),
+            "es": """<role>
+Eres un editor, orador, educador y autor muy capaz que es realmente bueno leyendo texto que representa la transcripción del habla humana y reescribiéndolo en un texto escrito bien estructurado y denso en información.
+</role>
+<task>
+Se te darán <passages> de texto en un formato "<p>texto【0】texto【1】... texto【2】</p>". Donde cada【número】es un <marker> y va DESPUÉS del texto al que hace referencia. Los marcadores están basados en cero y están en orden secuencial.
+
+Sigue estos pasos para transformar los <passages> en un diccionario de capítulos:
+1. Lee cuidadosamente los <passages> y elabora una lista de <chapters> que cubran equitativamente los <passages>.
+2. Revisa <chapters> y <passages> y para cada capítulo genera un <title> y el primer <marker> del pasaje relevante y crea un objeto <chapter> y agrégalo a la lista.
+3. Llama a <chapter_tool> y pasa la lista de objetos <chapter>.
+</task>""".strip(),
+        }
+        
+        title = {
+            "en": "Title of the chapter",
+            "es": "Título del capítulo",
+        }
+        marker = {
+            "en": "Marker in format '【number】'",
+            "es": "Marcador en formato '【número】'",
+        }
+        description = {
+            "en": "Renders chapters from the <passages>.",
+            "es": "Genera capítulos a partir de los <passages>.",
+        }
 
         properties = {
-            "title": "Title of the chapter",
-            "marker": "Marker in format '【number】'",
+            "title": title[lang],
+            "marker": marker[lang],
         }
 
         tool_definition = {
             "name": "chapter_tool",
-            "description": "Renders chapters from the <passages>.",
+            "description": description[lang],
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -186,7 +251,7 @@ Follow these steps to transform the <passages> into a dictionary of chapters:
         text = "\n".join([f"<p>{passage}</p>" for passage in passages])
 
         chapters = self.prompt_model(
-            system=system_prompt,
+            system=system_prompt[lang],
             messages=[User(content=f"<passages>{text}</passages>")],
             tools=[tool_definition],
             max_tokens=max_tokens,
@@ -200,7 +265,7 @@ Follow these steps to transform the <passages> into a dictionary of chapters:
             chapters["entities"], list
         ), f"Expected LLM to return list of chapters, got {chapters['entities']}"
         return {
-            int(re.findall(r"\d+", chapter["marker"])[0]): chapter["title"].strip()
+            int(re.findall(r"\d+", chapter["marker"])[0]): chapter["title"].strip()  # type: ignore
             for chapter in chapters["entities"]
         }
 
@@ -210,8 +275,13 @@ Follow these steps to transform the <passages> into a dictionary of chapters:
         examples: dict[str, list[str]],
         max_tokens: int = 4096,
         temperature: float = 0.5,
+        lang: str | None = None,
     ) -> list[str]:
-        system_prompt = """<role>
+        if not lang:
+            lang = "en"
+
+        system_prompt = {
+            "en": """<role>
 You are a very capable editor, speaker, educator, and author who is really good at reading text that represents transcript of human speech and rewriting it into well-structured, information-dense written text.
 </role>
 <task>
@@ -221,7 +291,20 @@ Follow these steps to rewrite the <transcript> and keep every <marker>:
 1. Study the message history carefully and understand how <transcript> is rewritten into series well-structured <paragraphs>.
 2. Return a series well-structured <paragraphs>, enclose each paragraph into <p></p> as shown in message history.
 3. Make sure to keep every <marker> in the <transcript> in the same order as it appears in the <transcript>.
-</task>""".strip()
+</task>""".strip(),
+            "es": """<role>
+Usted es un editor, orador, educador y autor muy capaz que es realmente bueno para leer texto que representa la transcripción del habla humana y reescribirlo en un texto escrito bien estructurado y denso en información.
+</role>
+<task>
+Se le dará un discurso <transcript> en un formato "texto【0】texto【1】... texto 【2】". Donde cada【número】es un <marker> y va DESPUÉS del texto al que hace referencia. Los marcadores están basados en cero y están en orden secuencial.
+
+Siga estos pasos para reescribir el <transcript> y mantener cada <marker>:
+1. Estudie cuidadosamente el historial de mensajes y comprenda cómo se reescribe el <transcript> en una serie de <paragraphs> bien estructurados.
+2. Devuelva una serie de <paragraphs> bien estructurados, encierre cada párrafo en <p></p> como se muestra en el historial de mensajes.
+3. Asegúrese de mantener cada <marker> en el <transcript> en el mismo orden en que aparece en el <transcript>.
+</task>
+""".strip(),
+        }
 
         def format_examples() -> Generator[tuple[str, str], None, None]:
             for prompt, paragraphs in examples.items():
@@ -244,7 +327,7 @@ Follow these steps to rewrite the <transcript> and keep every <marker>:
                 User(content=f"<transcript>{text_with_markers}</transcript>"),
                 Assistant(content="<paragraphs><p>"),
             ],
-            system=system_prompt,
+            system=system_prompt[lang],
             temperature=temperature,
         )
         assert isinstance(
@@ -296,8 +379,13 @@ Follow these steps to rewrite the <transcript> and keep every <marker>:
         context_size: Literal["small", "medium", "large"] = "small",
         max_tokens: int = 4096,
         temperature: float = 0.5,
+        lang: str | None = None,
     ) -> str:
-        system_prompt = """<role>
+        if not lang:
+            lang = "en"
+
+        system_prompt = {
+            "en": """<role>
 You are a very capable editor, speaker, educator, and author who is really good at researching sources and coming up with information dense responses to prompts backed by references from the context.
 </role>
 <task>
@@ -316,7 +404,26 @@ Follow the steps in <scratchpad> to construct <response> that is well-structured
 3. Review the response and make sure it is factually correct based on the <context>.
 4. Transfer all the relevant markers from <context> to <response> to support your response.
 </scratchpad>
-""".strip()
+""".strip(),
+            "es": """<role>
+Eres un editor, orador, educador y autor muy capaz que es realmente bueno investigando fuentes y generando respuestas densas en información a los prompts, respaldadas por referencias del contexto.
+</role>
+<task>
+Se te dará un <context> y un <prompt>. Cada <content> en <context> es una fuente de información que puedes usar para construir <response>.
+Cada <content> tiene atributos de título y resumen que describen el contenido del <content>.
+<text> es una transcripción de habla humana y <paragraphs> es una lista de párrafos bien estructurados encerrados en <p></p>.
+<text> y <paragraphs> contienen marcadores especiales en el formato de "texto【número】texto【número】... texto【número】". Todos los números son únicos. Si más de un <marker> sigue al texto, ambos se consideran como un solo marcador.
+Al construir la respuesta, asegúrate de transferir TODOS los marcadores originales del <context> al <response> que respalden tu respuesta.
+Sigue los pasos en <scratchpad> para construir <response> que esté bien estructurado, sea denso en información, cubra todas las partes del <prompt> y <context>, y esté fundamentado en el <context>.
+</task>
+<scratchpad>
+1. Estudia el <context> cuidadosamente.
+2. Genera <response> basado en el <prompt> y <context>.
+3. Revisa la respuesta y asegúrate de que sea factualmente correcta basada en el <context>.
+4. Transfiere todos los marcadores relevantes del <context> al <response> para respaldar tu respuesta.
+</scratchpad>
+""".strip(),
+        }
 
         if isinstance(prompt, str):
             prompt = [User(content=prompt)]
@@ -333,7 +440,7 @@ Follow the steps in <scratchpad> to construct <response> that is well-structured
 </prompt>"""
                 )
             ],
-            system=system_prompt,
+            system=system_prompt[lang],
             temperature=temperature,
         )
         assert isinstance(response, str), f"Expected LLM to return str, got {response}"

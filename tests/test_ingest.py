@@ -15,7 +15,7 @@ def test_extract_images(tmp_path):
 
 def test_slurp_subtitles():
     transcript = ingest.extract_transcript(
-        "https://www.youtube.com/watch?v=W3I3kAg2J7w"
+        "https://www.youtube.com/watch?v=W3I3kAg2J7w", lang="es"
     )
     assert transcript
 

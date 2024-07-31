@@ -10,6 +10,15 @@ def test_get_paragraphs() -> None:
         text, llm, max_tokens=2048, temperature=0.5, chunk_size=1024
     )
     assert len(paragraphs) > 2
+    
+    
+def test_get_paragraphs_es() -> None:
+    llm = platogram.llm.get_model("anthropic/claude-3-5-sonnet")
+    text = "En este video, vamos a hablar sobre los fundamentos del aprendizaje automático.【0】El aprendizaje automático es un campo de la inteligencia artificial que se centra en la construcción de algoritmos que pueden aprender de los datos y hacer predicciones o tomar decisiones sin ser programados explícitamente.【1】Existen tres tipos principales de aprendizaje automático: aprendizaje supervisado, aprendizaje no supervisado y aprendizaje por refuerzo.【2】El aprendizaje supervisado implica entrenar un modelo con datos etiquetados, donde se conoce la salida correcta para cada entrada.【3】El objetivo es que el modelo aprenda un mapeo de entradas a salidas que pueda aplicarse a datos nuevos y no vistos.【4】El aprendizaje no supervisado, por otro lado, implica encontrar patrones o estructuras en datos no etiquetados.【5】Al modelo no se le da ninguna guía explícita sobre cuál debería ser la salida correcta.【6】El aprendizaje por refuerzo es un tipo de aprendizaje automático donde un agente aprende a tomar decisiones interactuando con un entorno y recibiendo recompensas o castigos basados en sus acciones.【7】El objetivo es que el agente aprenda una política que maximice su recompensa acumulada a lo largo del tiempo.【8】El aprendizaje automático tiene muchas aplicaciones prácticas, como el reconocimiento de imágenes, el procesamiento del lenguaje natural y los sistemas de recomendación.【9】Es un campo emocionante y en rápida evolución con el potencial de transformar muchas industrias y resolver problemas complejos.【10】"
+    paragraphs = get_paragraphs(
+        text, llm, max_tokens=2048, temperature=0.5, chunk_size=1024, lang="es"
+    )
+    assert len(paragraphs) > 2
 
 
 def test_chunk_empty_input_string():
