@@ -166,11 +166,10 @@ Se te dará un <text> que contiene párrafos encerrados en etiquetas <p></p> y t
             max_tokens=max_tokens,
             temperature=temperature,
         )
-
-        assert isinstance(
-            meta, dict
-        ), f"Expected LLM to return dict with meta information, got {meta}"
-        return meta["title"], meta["summary"]
+        if isinstance(meta, dict):
+            return meta["title"], meta["summary"]
+        else:
+           return "Unknown", "Unknown"
 
     def get_chapters(
         self,

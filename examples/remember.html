@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Keeper</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f5f5;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+        h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-weight: normal;
+        }
+        #buttonContainer {
+            position: relative;
+            width: 250px;
+            height: 60px;
+            margin-bottom: 20px;
+        }
+        #captureButton {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            font-size: 18px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            border-radius: 30px;
+            background-color: #2196F3;
+            color: white;
+            overflow: hidden;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            outline: none;
+            box-shadow: 0 3px 5px -1px rgba(0,0,0,0.2), 0 6px 10px 0 rgba(0,0,0,0.14), 0 1px 18px 0 rgba(0,0,0,0.12);
+        }
+        #captureButton:hover {
+            background-color: #1976D2;
+        }
+        #captureButton:active {
+            box-shadow: 0 5px 5px -3px rgba(0,0,0,0.2), 0 8px 10px 1px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12);
+        }
+        #captureButton.recording {
+            background-color: #F44336;
+        }
+        #captureButton.processing {
+            background-color: #9C27B0;
+        }
+        #buttonContent {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+        #buttonIcon {
+            margin-right: 8px;
+        }
+        #equalizer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 10px;
+        }
+        .bar {
+            width: 3px;
+            background-color: rgba(255, 255, 255, 0.7);
+            transition: height 0.1s ease;
+        }
+        #progressBar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.1);
+            width: 0;
+            transition: width 0.5s linear;
+        }
+        #micSelect {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background-color: white;
+            margin-bottom: 20px;
+            width: 250px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Beyond Transcripts and Summaries</h1>
+    <h2>Record anything. Get a structured document back.</h2>
+    <select id="micSelect"></select>
+    <div id="buttonContainer">
+        <button id="captureButton">
+            <div id="progressBar"></div>
+            <div id="buttonContent">
+                <span id="buttonIcon"></span>
+                <span id="buttonText">Start</span>
+            </div>
+            <div id="equalizer"></div>
+        </button>
+    </div>
+
+    <script>
+        const button = document.getElementById('captureButton');
+        const buttonText = document.getElementById('buttonText');
+        const buttonIcon = document.getElementById('buttonIcon');
+        const equalizer = document.getElementById('equalizer');
+        const progressBar = document.getElementById('progressBar');
+        const micSelect = document.getElementById('micSelect');
+        let state = 'idle';
+        let animationId;
+        let progressInterval;
+        let audioContext;
+        let analyser;
+        let dataArray;
+        let source;
+        let mediaRecorder;
+        let audioChunks = [];
+
+        // Create equalizer bars
+        const barCount = 30;
+        for (let i = 0; i < barCount; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            equalizer.appendChild(bar);
+        }
+        const bars = document.querySelectorAll('.bar');
+
+        // Funny status messages
+        const statusMessages = [
+            "Brewing", "Pondering", "Decoding", "Wrangling", "Juggling",
+            "Untangling", "Summoning", "Enchanting", "Caffeinating", "Meditating"
+        ];
+
+        // Populate microphone selection dropdown
+        async function populateMicrophoneList() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const audioInputs = devices.filter(device => device.kind === 'audioinput');
+            
+            audioInputs.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.text = device.label || `Microphone ${micSelect.length + 1}`;
+                micSelect.appendChild(option);
+            });
+        }
+
+        populateMicrophoneList();
+
+        button.addEventListener('click', () => {
+            if (state === 'idle') {
+                startRecording();
+            } else if (state === 'recording') {
+                stopRecording();
+            }
+        });
+
+        async function startRecording() {
+            try {
+                const constraints = {
+                    audio: {
+                        deviceId: micSelect.value ? {exact: micSelect.value} : undefined
+                    }
+                };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 64;
+                source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    audioChunks = [];
+                    // Here you would typically send the audioBlob to your server
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob);
+                    fetch('/doc', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        window.jobId = data.job_id;
+                    });
+                    simulateJobProgress();
+                };
+
+                mediaRecorder.start();
+                state = 'recording';
+                button.classList.add('recording');
+                buttonText.textContent = 'Stop';
+                buttonIcon.textContent = '';
+                visualize();
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                source.disconnect();
+                audioContext.close();
+            }
+            state = 'processing';
+            button.classList.remove('recording');
+            button.classList.add('processing');
+            cancelAnimationFrame(animationId);
+            bars.forEach(bar => bar.style.height = '0px');
+        }
+
+        function visualize() {
+            animationId = requestAnimationFrame(visualize);
+            analyser.getByteFrequencyData(dataArray);
+            bars.forEach((bar, index) => {
+                const barHeight = (dataArray[index] / 255) * 20;
+                bar.style.height = `${barHeight}px`;
+            });
+        }
+
+        function simulateJobProgress() {
+            let progress = 0;
+            updateStatusMessage();
+            
+            progressInterval = setInterval(() => {
+                progress += 1;
+                progressBar.style.width = `${progress % 100}%`;
+                if (progress % 10 === 0) {
+                    // check for job status
+                    fetch(`/jobs/${window.jobId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'completed') {
+                            // download file
+                            const url = data.url;
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = data.url.split('/').pop();
+                            a.click();
+                            clearInterval(progressInterval);
+                            resetButton();
+                            return;
+                        }
+                    });
+                    updateStatusMessage();
+                }
+            }, 100);
+        }
+
+        function updateStatusMessage() {
+            const messageIndex = Math.floor(Math.random() * statusMessages.length);
+            buttonText.textContent = statusMessages[messageIndex];
+            buttonIcon.textContent = '';
+        }
+
+        function resetButton() {
+            state = 'idle';
+            button.classList.remove('processing');
+            buttonText.textContent = 'Start';
+            buttonIcon.textContent = '';
+            progressBar.style.width = '0';
+        }
+    </script>
+</body>
+</html>

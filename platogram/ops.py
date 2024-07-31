@@ -213,7 +213,11 @@ def index(
     lang: str | None = None,
 ) -> Content:
     text = render({i: event.text for i, event in enumerate(transcript)})
+
     paragraphs = get_paragraphs(text, llm, max_tokens, temperature, chunk_size, lang=lang)
+    if not paragraphs:
+        paragraphs = [text]
+
     title, summary = llm.get_meta(paragraphs, lang=lang)
     chapters = llm.get_chapters(paragraphs, lang=lang)
     return Content(
