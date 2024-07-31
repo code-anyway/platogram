@@ -2,7 +2,7 @@
 name = "platogram"
 version = "0.1.0"
 description = "Platogram: Unlock the power of knowledge stored in audio."
-authors = ["Code Anway <platogram@codeanyway.com>"]
+authors = ["Code Anyway <platogram@codeanyway.com>"]
 license = "Apache-2.0"
 readme = "README.md"
 
