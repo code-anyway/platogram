@@ -2,6 +2,7 @@
 .env
 .platogram-cache
 id
+content
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
