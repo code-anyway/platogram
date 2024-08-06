@@ -109,29 +109,33 @@ class Model:
 
         system_prompt = {
             "en": """<role>
-You are a very capable editor, speaker, educator, and author with a knack for coming up with meta information about the content.
+You are a very capable editor, speaker, educator, and author with a knack for coming up with information about the content that helps to understand it.
 </role>
 <task>
-You will be given a <text> that contains paragraphs enclosed in <p></p> tags and you will need to come up with meta information about the content.
+You will be given a <text> that contains paragraphs enclosed in <p></p> tags and you will need to come up with information about the content that helps to understand it.
+Use simple language. Use only the words from <text>.
+Always call render_content_info tool and pass the information about the content.
 </task>
 """.strip(),
             "es": """<role>
-Eres un editor, orador, educador y autor muy capaz con un don para crear metainformación sobre el contenido.
+Eres un editor, orador, educador y autor muy capaz con un don para crear información sobre el contenido que ayuda a entenderlo.
 </role>
 <task>
-Se te dará un <text> que contiene párrafos encerrados en etiquetas <p></p> y tendrás que crear metainformación sobre el contenido.
+Se te dará un <text> que contiene párrafos encerrados en etiquetas <p></p> y tendrás que crear información sobre el contenido que ayude a entenderlo.
+Utiliza un lenguaje sencillo. Usa solo las palabras de <text>.
+Siempre llama al tool render_content_info y pasa la información sobre el contenido.
 </task>
 """.strip()
         }
 
         title = {
-            "en": "Come up with the title which speaks to the essence of the content. Use simple language.",
-            "es": "Crea un título que refleje la esencia del contenido. Utiliza un lenguaje sencillo."
+            "en": "Come up with the title which speaks to the essence of <text>. Use simple language. Use only the words from <text>.",
+            "es": "Crea un título que refleje la esencia de <text>. Utiliza un lenguaje sencillo. Usa solo las palabras de <text>."
         }
 
         summary = {
-            "en": "Distill the key insights and express them as a short story using simple language. Make sure to cover all parts of the summary.",
-            "es": "Destila las ideas principales y exprésalas como un cuento corto usando un lenguaje sencillo. Asegúrate de cubrir todas las partes del resumen."
+            "en": "Distill the key insights and express them as a comprehensive abstract summary. Use simple language. Use only words from <text>. Make sure to cover all paragraphs <p>...</p>.",
+            "es": "Destila las ideas principales y exprésalas como un resumen abstracto completo. Utiliza un lenguaje sencillo. Usa solo las palabras de <text>. Asegúrate de cubrir todos los párrafos <p>...</p>."
         }
 
         properties = {
@@ -140,12 +144,12 @@ Se te dará un <text> que contiene párrafos encerrados en etiquetas <p></p> y t
         }
         
         description = {
-            "en": "Renders meta information about the content.",
-            "es": "Genera metainformación sobre el contenido.",
+            "en": "Renders useful information about <text>.",
+            "es": "Genera información útil sobre <text>.",
         }
 
         tool_definition = {
-            "name": "render_meta",
+            "name": "render_content_info",
             "description": description[lang],
             "input_schema": {
                 "type": "object",
