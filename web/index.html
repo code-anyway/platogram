@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>File/URL Converter</title>
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+    <style>
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <h1>File/URL Converter</h1>
+
+      <div id="auth-section">
+        <button id="login-button" onclick="login()" class="hidden">
+          Log In
+        </button>
+        <button id="logout-button" onclick="logout()" class="hidden">
+          Log Out
+        </button>
+      </div>
+
+      <div id="input-section">
+        <input type="text" id="url-input" placeholder="Enter URL" />
+        <input type="file" id="file-input" class="hidden" />
+        <button onclick="onConvertClick()">Convert</button>
+      </div>
+
+      <div id="status-section" class="hidden">
+        <p>Processing... Please wait.</p>
+        <progress id="progress-bar" value="0" max="100"></progress>
+        <button onclick="reset()">Reset</button>
+      </div>
+
+      <div id="error-section" class="hidden">
+        <p>An error occurred. Please try again.</p>
+        <button onclick="reset()">Reset</button>
+      </div>
+    </div>
+
+    <script>
+      let auth0Client = null;
+
+      // Initialize Auth0
+      async function initAuth0() {
+        try {
+          auth0Client = await auth0.createAuth0Client({
+            domain: "dev-df8axtz2fh7qc2n2.us.auth0.com",
+            clientId: "oamC4opFTmNhvswdIGFAk7YXE6r9pQoE",
+            authorizationParams: {
+              redirect_uri: window.location.origin,
+              audience: "https://web.platogram.ai",
+              scope: "openid profile email",
+            },
+            cacheLocation: "localstorage",
+            // useRefreshTokens: true,
+          });
+          console.log("Auth0 client initialized successfully");
+
+          // Check for the code and state parameters
+          const query = window.location.search;
+          if (query.includes("code=") && query.includes("state=")) {
+            await auth0Client.handleRedirectCallback();
+            window.history.replaceState({}, document.title, "/");
+
+            // Check if there's saved input data and process it
+            const savedInputData = sessionStorage.getItem("inputData");
+            if (savedInputData) {
+              await postToConvert(JSON.parse(savedInputData));
+              sessionStorage.removeItem("inputData");
+            }
+          }
+
+          await updateUI();
+        } catch (error) {
+          console.error("Error initializing Auth0:", error);
+        }
+      }
+
+      function updateUIStatus(status, errorMessage = "") {
+        const inputSection = document.getElementById("input-section");
+        const statusSection = document.getElementById("status-section");
+        const errorSection = document.getElementById("error-section");
+
+        inputSection.classList.add("hidden");
+        statusSection.classList.add("hidden");
+        errorSection.classList.add("hidden");
+
+        switch (status) {
+          case "processing":
+            statusSection.classList.remove("hidden");
+            break;
+          case "complete":
+            inputSection.classList.remove("hidden");
+            break;
+          case "error":
+            errorSection.classList.remove("hidden");
+            errorSection.querySelector("p").textContent =
+              errorMessage || "An error occurred. Please try again.";
+            break;
+        }
+      }
+
+      // Update UI based on authentication state
+      async function updateUI() {
+        const isAuthenticated = await auth0Client.isAuthenticated();
+        document
+          .getElementById("login-button")
+          .classList.toggle("hidden", isAuthenticated);
+        document
+          .getElementById("logout-button")
+          .classList.toggle("hidden", !isAuthenticated);
+
+        if (isAuthenticated) {
+          const user = await auth0Client.getUser();
+          const token = await auth0Client.getTokenSilently({
+            audience: "https://web.platogram.ai",
+          });
+          pollStatus(token);
+          console.log("Logged in as:", user.email);
+        }
+      }
+
+      async function reset() {
+        try {
+          const token = await auth0Client.getTokenSilently({
+            audience: "https://web.platogram.ai",
+          });
+
+          // Call the /reset endpoint
+          const response = await fetch("/reset", {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to reset");
+          }
+
+          // Clear input fields
+          document.getElementById("url-input").value = "";
+          document.getElementById("file-input").value = "";
+
+          // Reset progress bar
+          document.getElementById("progress-bar").value = 0;
+
+          // Clear any stored input data
+          sessionStorage.removeItem("inputData");
+
+          // Poll status after reset
+          pollStatus(token);
+        } catch (error) {
+          console.error("Error resetting:", error);
+          updateUIStatus("error", "Failed to reset. Please try again.");
+        }
+      }
+
+      // Handle the 'Convert' button click
+      async function onConvertClick() {
+        const inputData = getInputData();
+        sessionStorage.setItem("inputData", JSON.stringify(inputData));
+        if (await auth0Client.isAuthenticated()) {
+          await postToConvert(inputData);
+        } else {
+          login();
+        }
+      }
+
+      // Get input data (URL or File)
+      function getInputData() {
+        const urlInput = document.getElementById("url-input").value;
+        const fileInput = document.getElementById("file-input").files[0];
+        return urlInput || fileInput;
+      }
+
+      // Login
+      async function login() {
+        try {
+          await auth0Client.loginWithRedirect({
+            authorizationParams: {
+              redirect_uri: window.location.origin,
+            },
+          });
+        } catch (error) {
+          console.error("Error logging in:", error);
+        }
+      }
+
+      // Logout
+      async function logout() {
+        try {
+          await auth0Client.logout({
+            logoutParams: {
+              returnTo: window.location.origin,
+            },
+          });
+        } catch (error) {
+          console.error("Error logging out:", error);
+        }
+      }
+
+      async function postToConvert(inputData) {
+        try {
+          const token = await auth0Client.getTokenSilently({
+            audience: "https://web.platogram.ai",
+          });
+          const response = await fetch("/convert", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ payload: inputData }),
+          });
+          const result = await response.json();
+
+          if (result.message === "Conversion started") {
+            pollStatus(token);
+          } else {
+            updateUIStatus("error", "Unexpected response from server");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          updateUIStatus("error", "Something went wrong...");
+        }
+      }
+
+      async function pollStatus(token) {
+        try {
+          const response = await fetch("/status", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          const result = await response.json();
+
+          if (result.status === "busy") {
+            updateUIStatus("processing");
+            setTimeout(() => pollStatus(token), 5000); // Poll every 5 seconds
+          } else if (result.status === "idle") {
+            updateUIStatus("complete");
+          } else if (result.status === "failed") {
+            updateUIStatus("error", result.error);
+          } else {
+            updateUIStatus("error", response.error);
+          }
+        } catch (error) {
+          console.error("Error polling status:", error);
+          updateUIStatus("error", "Something went wrong...");
+        }
+      }
+
+      // Initialize the app
+      initAuth0().catch((error) =>
+        console.error("Error initializing app:", error)
+      );
+    </script>
+  </body>
+</html>
