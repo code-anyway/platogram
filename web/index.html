@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>File/URL Converter</title>
+    <title>Platogram</title>
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
     <style>
       .hidden {
@@ -13,7 +13,8 @@
   </head>
   <body>
     <div id="app">
-      <h1>File/URL Converter</h1>
+      <h1>Transform Audio and Video into Structured Documents</h1>
+      <h2>Enter a URL and we will e-mail you a document that sparks joy.</h2>
 
       <div id="auth-section">
         <button id="login-button" onclick="login()" class="hidden">
@@ -24,21 +25,25 @@
         </button>
       </div>
 
-      <div id="input-section">
-        <input type="text" id="url-input" placeholder="Enter URL" />
-        <input type="file" id="file-input" class="hidden" />
-        <button onclick="onConvertClick()">Convert</button>
-      </div>
+      <div id="main-section">
+        <div id="input-section">
+          <input type="text" id="url-input" placeholder="Enter URL" />
+          <input type="file" id="file-input" class="hidden" />
+          <button onclick="onConvertClick()">Convert</button>
+        </div>
 
-      <div id="status-section" class="hidden">
-        <p>Processing... Please wait.</p>
-        <progress id="progress-bar" value="0" max="100"></progress>
-        <button onclick="reset()">Reset</button>
-      </div>
+        <div id="status-section" class="hidden">
+          <p>
+            Working on it. You will receive an email from Artyom Astafurov with
+            PDF, Word, and Markdown documents once ready.
+          </p>
+          <button onclick="reset()">Cancel</button>
+        </div>
 
-      <div id="error-section" class="hidden">
-        <p>An error occurred. Please try again.</p>
-        <button onclick="reset()">Reset</button>
+        <div id="error-section" class="hidden">
+          <p>An error occurred. Please try again.</p>
+          <button onclick="reset()">Reset</button>
+        </div>
       </div>
     </div>
 
@@ -146,9 +151,6 @@
           // Clear input fields
           document.getElementById("url-input").value = "";
           document.getElementById("file-input").value = "";
-
-          // Reset progress bar
-          document.getElementById("progress-bar").value = 0;
 
           // Clear any stored input data
           sessionStorage.removeItem("inputData");
