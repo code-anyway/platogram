@@ -1,2 +1,4 @@
 #!/usr/bin/env bash
-export $(grep -v '^#' .env | xargs)
+set -a
+source <(grep -v '^#' .env | sed -e 's/^/export /')
+set +a

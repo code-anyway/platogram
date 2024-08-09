@@ -3,6 +3,7 @@
 .platogram-cache
 id
 content
+ngrok.yml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -89,7 +89,6 @@ CONTRIBUTORS=$(plato \
     --query "$CONTRIBUTORS_PROMPT" \
     --generate \
     --context-size large \
-    --inline-references \
     --prefill "$CONTRIBUTORS_PREFILL" \
     "$URL" --lang "$LANG")
 
@@ -111,7 +110,26 @@ CONCLUSION=$(plato \
     --prefill "$CONCLUSION_PREFILL" \
     "$URL" --lang "$LANG")
 
+# Without References
 echo "Generating Documents..."
+(
+    echo $'# '"$TITLE"$'\n'
+    echo $'## Origin\n\n'"$URL"$'\n'
+    echo $'## Abstract\n\n'"$ABSTRACT"$'\n'
+    echo "$CONTRIBUTORS"$'\n'
+    echo $'## Chapters\n\n'"$CHAPTERS"$'\n'
+    echo "$INTRODUCTION"$'\n'
+    echo $'## Discussion\n\n'"$PASSAGES"$'\n'
+    echo "$CONCLUSION"$'\n'
+) | \
+    sed -E 's/\[\[([0-9]+)\]\]\([^)]+\)//g' | \
+    sed -E 's/\[([0-9]+)\]//g' | \
+    tee \
+    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-no-refs.docx" --from markdown) \
+    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-no-refs.pdf" --from markdown --pdf-engine=xelatex) \
+    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-no-refs.md" --from markdown) > /dev/null
+
+# With References
 (
     echo $'# '"$TITLE"$'\n'
     echo $'## Origin\n\n'"$URL"$'\n'
@@ -123,14 +141,9 @@ echo "Generating Documents..."
     echo "$CONCLUSION"$'\n'
     echo $'## References\n\n'"$REFERENCES"$'\n'
 ) | \
-    if [ "$INLINE_REFERENCES" = "true" ]; then
-        cat
-    else
-        sed -E 's/\[\[([0-9]+)\]\]\([^)]+\)//g' | \
-        sed -E 's/\[([0-9]+)\]//g'
-    fi | \
     tee \
-    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').docx" --from markdown) \
-    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').pdf" --from markdown --pdf-engine=xelatex) \
-    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g').md" --from markdown) > /dev/null
+    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-refs.docx" --from markdown) \
+    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-refs.pdf" --from markdown --pdf-engine=xelatex) \
+    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-refs.md" --from markdown) > /dev/null
+
 wait
