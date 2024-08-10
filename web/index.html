@@ -11,92 +11,101 @@
     />
     <style>
       :root {
-        --primary-color: #3f51b5;
-        --primary-light: #757de8;
-        --primary-dark: #002984;
-        --secondary-color: #ff4081;
-        --text-color: #212121;
-        --text-secondary: #757575;
-        --background-color: #fafafa;
+        --primary-color: #3498db;
+        --primary-light: #5dade2;
+        --primary-dark: #2980b9;
+        --secondary-color: #2ecc71;
+        --accent-color: #f39c12;
+        --text-color: #333333;
+        --text-secondary: #7f8c8d;
+        --background-color: #ecf0f1;
         --surface-color: #ffffff;
-        --error-color: #f44336;
+        --error-color: #e74c3c;
+        --donate-color: #e67e22;
+        --donate-hover: #d35400;
       }
-
+    
       body {
         font-family: "Roboto", sans-serif;
         line-height: 1.6;
         color: var(--text-color);
         background-color: var(--background-color);
+        margin: 0;
+        padding: 0;
       }
-
+    
       .container {
-        max-width: 1200px;
+        max-width: 1000px;
         margin: 0 auto;
         padding: 0 20px;
       }
-
-      h1,
-      h2,
-      h3,
-      h4,
-      h5,
-      h6 {
-        font-weight: 300;
-        margin-bottom: 1rem;
+    
+      h1, h2, h3, h4, h5, h6 {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--primary-dark);
       }
-
-      h1 {
-        font-size: 2.5rem;
-      }
-
-      h2 {
-        font-size: 2rem;
-      }
-
-      h3 {
-        font-size: 1.75rem;
-      }
-
+    
+      h1 { font-size: 2.5rem; }
+      h2 { font-size: 2rem; }
+      h3 { font-size: 1.75rem; }
+      h4 { font-size: 1.5rem; }
+    
       p {
-        margin-bottom: 1rem;
+        margin-bottom: 0.75rem;
       }
-
+    
       .hidden {
         display: none !important;
       }
-
+    
       .btn {
         display: inline-block;
-        padding: 0.5rem 1rem;
+        padding: 0.75rem 1.5rem;
         border-radius: 4px;
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        transition: all 0.3s ease;
         cursor: pointer;
+        text-decoration: none;
+        font-size: 1rem;
+        height: 48px;
+        line-height: 24px;
+        box-sizing: border-box;
       }
-
+    
       .btn-primary {
         background-color: var(--primary-color);
         color: white;
       }
-
+    
       .btn-primary:hover {
         background-color: var(--primary-light);
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       }
-
+    
       .btn-secondary {
         background-color: var(--surface-color);
         color: var(--primary-color);
         border: 1px solid var(--primary-color);
       }
-
+    
       .btn-secondary:hover {
-        background-color: rgba(63, 81, 181, 0.08);
+        background-color: var(--accent-color);
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
-
+    
+      .btn-donate {
+        background-color: var(--donate-color);
+        color: white;
+      }
+    
+      .btn-donate:hover {
+        background-color: var(--donate-hover);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+    
       .card {
         background-color: var(--surface-color);
         border-radius: 4px;
@@ -105,11 +114,11 @@
         margin-bottom: 1rem;
         transition: box-shadow 0.3s ease;
       }
-
+    
       .card:hover {
         box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
       }
-
+    
       input[type="text"],
       input[type="email"],
       textarea {
@@ -121,53 +130,200 @@
         background-color: transparent;
         transition: border-color 0.3s ease;
       }
-
+    
       input[type="text"]:focus,
       input[type="email"]:focus,
       textarea:focus {
         outline: none;
         border-color: var(--primary-color);
       }
-
+    
       .section {
         margin-bottom: 2rem;
+        padding: 2rem 0;
       }
-
+    
       .text-center {
         text-align: center;
       }
-
+    
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         gap: 1rem;
       }
-
+    
+      #main-section {
+        background-color: var(--primary-color);
+        color: var(--surface-color);
+        padding: 3rem 0;
+        text-align: center;
+      }
+    
+      #main-section h1 {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: var(--surface-color);
+      }
+    
+      #main-section h2 {
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        color: var(--surface-color);
+      }
+    
+      #input-section {
+        background-color: var(--secondary-color);
+        color: var(--surface-color);
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+      }
+    
+      #input-section input[type="text"] {
+        flex: 1;
+        min-width: 200px;
+        margin: 0;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        background-color: rgba(255, 255, 255, 0.9);
+        color: var(--text-color);
+        height: 48px;
+        box-sizing: border-box;
+      }
+    
+      #input-section .btn {
+        margin: 0;
+        flex-basis: 150px;
+      }
+    
+      #pricing {
+        background-color: var(--surface-color);
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+    
+      #pricing h3 {
+        color: var(--primary-dark);
+        margin-bottom: 1rem;
+      }
+    
+      #pricing .price {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+      }
+    
       @media (max-width: 768px) {
-        h1 {
-          font-size: 2rem;
+        h1 { font-size: 2rem; }
+        h2 { font-size: 1.75rem; }
+        h3 { font-size: 1.5rem; }
+        #main-section h1 { font-size: 2.5rem; }
+        #main-section h2 { font-size: 1.25rem; }
+        
+        #input-section {
+          flex-direction: column;
         }
-
-        h2 {
-          font-size: 1.75rem;
+    
+        #input-section input[type="text"],
+        #input-section .btn {
+          width: 100%;
+          margin-bottom: 1rem;
         }
-
-        h3 {
-          font-size: 1.5rem;
+    
+        #input-section .btn:last-child {
+          margin-bottom: 0;
         }
+      }
+    /* Add new styles for additional sections */
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+      
+      .feature-item {
+        text-align: center;
+        padding: 1rem;
+      }
+      
+      .feature-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
+      
+      .testimonial {
+        font-style: italic;
+        margin-bottom: 1rem;
+      }
+      
+      .industry-list {
+        list-style-type: none;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+      }
+      
+      .industry-list li {
+        flex-basis: 45%;
+        margin-bottom: 1rem;
+      }
+      
+      .logo-container {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        flex-wrap: wrap;
+        margin: 2rem 0;
+      }
+      
+      .logo-container img {
+        max-width: 100px;
+        height: auto;
+        margin: 1rem;
+      }
+      footer {
+        background-color: var(--primary-dark);
+        color: var(--surface-color);
+        text-align: center;
+        padding: 1rem 0;
+        margin-top: 2rem;
+      }
+      
+      footer p {
+        margin: 0;
       }
     </style>
   </head>
   <body>
     <div id="app" class="container">
-      <header class="section text-center">
+      <header id="main-section" class="section">
         <h1>Transform Audio into Actionable Knowledge</h1>
         <h2>Unlock the Power of Spoken Content</h2>
         <p>
-          Convert unlimited audio into structured, readable documents with
-          Platogram's cutting-edge AI technology.
-        </p>
+          Convert unlimited audio into structured, readable documents with Platogram.
+        </p> 
       </header>
+
+      <!-- <div class="logo-container">
+        <img src="/api/placeholder/100/50" alt="Partner Logo 1" />
+        <img src="/api/placeholder/100/50" alt="Partner Logo 2" />
+        <img src="/api/placeholder/100/50" alt="Partner Logo 3" />
+        <img src="/api/placeholder/100/50" alt="Partner Logo 4" />
+      </div> -->
 
       <div id="auth-section" class="section text-center">
         <button
@@ -186,37 +342,29 @@
         </button>
       </div>
 
-      <div id="main-section" class="section">
-        <div id="input-section" class="text-center">
-          <input type="text" id="url-input" placeholder="Enter URL" />
-          <input type="file" id="file-input" class="hidden" />
-          <button onclick="onConvertClick()" class="btn btn-primary">
-            Convert
-          </button>
-        </div>
-
-        <div id="status-section" class="hidden text-center">
-          <p>
-            Working on it. You will receive an email from Artyom Astafurov with
-            PDF, Word, and Markdown documents once ready.
-          </p>
-          <button onclick="reset()" class="btn btn-secondary">Cancel</button>
-        </div>
-
-        <div id="error-section" class="hidden text-center">
-          <p>An error occurred. Please try again.</p>
-          <button onclick="reset()" class="btn btn-secondary">Reset</button>
-        </div>
+      <div id="input-section" class="section text-center">
+        <input type="text" id="url-input" placeholder="Enter URL" />
+        <input type="file" id="file-input" class="hidden" />
+        <button onclick="onConvertClick()" class="btn btn-primary">
+          Convert
+        </button>
+        <button onclick="showDonateModal()" class="btn btn-donate">
+          Donate
+        </button>
       </div>
 
-      <!-- <section class="section text-center">
-        <h3>Trusted by innovators and researchers across industries</h3>
-        <div class="grid">
-          <img src="/api/placeholder/100/50" alt="Partner logo" />
-          <img src="/api/placeholder/100/50" alt="Partner logo" />
-          <img src="/api/placeholder/100/50" alt="Partner logo" />
-        </div>
-      </section> -->
+      <div id="status-section" class="hidden text-center">
+        <p>
+          Working on it. You will receive an email from Artyom Astafurov with
+          PDF, Word, and Markdown documents once ready.
+        </p>
+        <button onclick="reset()" class="btn btn-secondary">Cancel</button>
+      </div>
+
+      <div id="error-section" class="hidden text-center">
+        <p>An error occurred. Please try again.</p>
+        <button onclick="reset()" class="btn btn-secondary">Reset</button>
+      </div>
 
       <section class="section">
         <h3 class="text-center">
@@ -259,25 +407,19 @@
         <h3 class="text-center">How It Works</h3>
         <div class="grid">
           <div class="card">
-            <h4>1. Input Your Audio</h4>
+            <h4>Input Your Audio</h4>
             <p>Provide a URL to your audio file (file upload coming soon!).</p>
           </div>
           <div class="card">
-            <h4>2. AI-Powered Processing</h4>
-            <p>
-              Our advanced AI analyzes and restructures the content, extracting
-              key information.
-            </p>
+            <h4>AI-Powered Processing</h4>
+            <p>Our advanced AI analyzes and restructures the content, extracting key information.</p>
           </div>
           <div class="card">
-            <h4>3. Receive Your Document</h4>
-            <p>
-              Get a well-organized, readable document delivered straight to your
-              inbox.
-            </p>
+            <h4>Receive Your Document</h4>
+            <p>Get a well-organized, readable document delivered straight to your inbox.</p>
           </div>
           <div class="card">
-            <h4>4. Explore and Share</h4>
+            <h4>Explore and Share</h4>
             <p>Easily search, analyze, and share the extracted knowledge.</p>
           </div>
         </div>
@@ -285,88 +427,69 @@
 
       <section class="section">
         <h3 class="text-center">Features That Set Us Apart</h3>
-        <div class="grid">
-          <div class="card">
-            <h4>🔒 Uncompromising Privacy</h4>
-            <p>
-              We process data without storing it, similar to Anthropic's privacy
-              standards. Only publicly available content from YouTube and Apple
-              Podcasts is retained.
-            </p>
+        <div class="feature-grid">
+          <div class="feature-item">
+            <div class="feature-icon">🔒</div>
+            <h4>Uncompromising Privacy</h4>
+            <p>We process data without storing it, similar to Anthropic's privacy standards.</p>
           </div>
-          <div class="card">
-            <h4>📊 Structured Knowledge Extraction</h4>
-            <p>
-              Transform unstructured audio into organized, insightful documents
-              with precise referencing to the original source.
-            </p>
+          <div class="feature-item">
+            <div class="feature-icon">📊</div>
+            <h4>Structured Knowledge Extraction</h4>
+            <p>Transform unstructured audio into organized, insightful documents.</p>
           </div>
-          <div class="card">
-            <h4>📧 Email Integration</h4>
-            <p>
-              Receive your processed documents directly in your inbox as PDF and
-              Word attachments.
-            </p>
+          <div class="feature-item">
+            <div class="feature-icon">📧</div>
+            <h4>Email Integration</h4>
+            <p>Receive your processed documents directly in your inbox.</p>
           </div>
-          <div class="card">
-            <h4>🌐 Seamless Workflow</h4>
-            <p>
-              Start with a simple URL input, with file upload functionality
-              coming soon to streamline your experience.
-            </p>
+          <div class="feature-item">
+            <div class="feature-icon">🌐</div>
+            <h4>Seamless Workflow</h4>
+            <p>Start with a simple URL input, with file upload coming soon.</p>
           </div>
         </div>
       </section>
 
       <section class="section">
         <h3 class="text-center">Unleash the Potential Across Industries</h3>
-        <ul>
-          <li>
-            <strong>Business Intelligence</strong>: Transform meetings and
-            conferences into searchable knowledge repositories.
-          </li>
-          <li>
-            <strong>Content Creation</strong>: Generate written content from
-            podcasts and videos effortlessly.
-          </li>
-          <li>
-            <strong>Medical Transcription</strong>: Capture and analyze
-            important healthcare discussions (regulations permitting).
-          </li>
-          <li>
-            <strong>Customer Service</strong>: Extract actionable insights from
-            customer interactions.
-          </li>
-          <li>
-            <strong>Personal Use</strong>: Keep written records of important
-            conversations, like doctor's appointments.
-          </li>
+        <ul class="industry-list">
+          <li><strong>Business Intelligence:</strong> Transform meetings and conferences into searchable knowledge repositories.</li>
+          <li><strong>Content Creation:</strong> Generate written content from podcasts and videos effortlessly.</li>
+          <li><strong>Medical Transcription:</strong> Capture and analyze important healthcare discussions (regulations permitting).</li>
+          <li><strong>Customer Service:</strong> Extract actionable insights from customer interactions.</li>
+          <li><strong>Personal Use:</strong> Keep written records of important conversations, like doctor's appointments.</li>
         </ul>
       </section>
 
-      <section class="section">
-        <h3 class="text-center">Pricing: Support Our Mission</h3>
-        <div class="card">
-          <p>
-            We believe in making knowledge accessible. That's why Platogram
-            operates on a donation-based model.
-          </p>
-          <h4>Suggested Donation</h4>
-          <p class="text-center">
-            <strong>$2 per hour of audio processed</strong>
-          </p>
-          <ul>
-            <li>Process as much audio as you need</li>
-            <li>Pay what you can, when you can</li>
-            <li>Help us keep Platogram accessible for everyone</li>
-          </ul>
-          <h4>How it works:</h4>
-          <ol>
-            <li>Use Platogram for free</li>
-            <li>Love the results? Consider donating</li>
-            <li>Your support helps us improve and maintain the service</li>
-          </ol>
+      <!-- <section class="section">
+        <h3 class="text-center">What Our Users Say</h3>
+        <div class="grid">
+          <div class="card">
+            <p class="testimonial">"Platogram has revolutionized how we handle knowledge extraction from audio. The quality of summaries is incredible!"</p>
+            <p><em>- Jane Smith, Product Manager</em></p>
+          </div>
+          <div class="card">
+            <p class="testimonial">"As a podcaster, Platogram has opened up new avenues for content creation. It's a game-changer!"</p>
+            <p><em>- John Doe, Top 10 Tech Podcaster</em></p>
+          </div>
         </div>
+      </section> -->
+
+      <section id="pricing" class="section">
+        <h3>Pricing: Support Our Mission</h3>
+        <p>We believe in making knowledge accessible. That's why Platogram operates on a donation-based model.</p>
+        <div class="price">$2 per hour of audio processed</div>
+        <p><strong>Suggested Donation</strong></p>
+        <ul style="text-align: left; display: inline-block;">
+          <li>Process as much audio as you need</li>
+          <li>Pay what you can, when you can</li>
+          <li>Help us keep Platogram accessible for everyone</li>
+        </ul>
+        <p>Your support helps us improve and maintain the service.</p>
+        <button onclick="showDonateModal()" class="btn btn-donate">
+          Donate Now
+        </button>
       </section>
 
       <section class="section">
@@ -403,21 +526,27 @@
           <div class="card">
             <h4>Is Platogram really free to use?</h4>
             <p>
-              Yes! Platogram is free to use. We operate on a donation-based
-              model, so you can contribute if you find value in our service.
+              Yes! Platogram is free to use. We operate on a donation-based model, so you can contribute if you find value in our service.
             </p>
           </div>
           <div class="card">
             <h4>Why do you suggest a donation of $2 per hour?</h4>
             <p>
-              This amount helps cover our processing costs and allows us to keep
-              improving Platogram. However, you're welcome to donate any amount
-              you're comfortable with.
+              This amount helps cover our processing costs and allows us to keep improving Platogram. However, you're welcome to donate any amount you're comfortable with.
             </p>
           </div>
         </div>
       </section>
     </div>
+
+    <footer>
+      <p>
+        Platogram is built with 💜 in New York and Boston by 
+        <a href="https://codeanyway.com" target="_blank" rel="noopener noreferrer">Code Anyway, Inc</a> 
+        in 2023-2024
+      </p>
+    </footer>
+
     <script>
       let auth0Client = null;
 
