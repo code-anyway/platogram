@@ -5,48 +5,419 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Platogram</title>
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      :root {
+        --primary-color: #3f51b5;
+        --primary-light: #757de8;
+        --primary-dark: #002984;
+        --secondary-color: #ff4081;
+        --text-color: #212121;
+        --text-secondary: #757575;
+        --background-color: #fafafa;
+        --surface-color: #ffffff;
+        --error-color: #f44336;
+      }
+
+      body {
+        font-family: "Roboto", sans-serif;
+        line-height: 1.6;
+        color: var(--text-color);
+        background-color: var(--background-color);
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-weight: 300;
+        margin-bottom: 1rem;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+      }
+
+      h2 {
+        font-size: 2rem;
+      }
+
+      h3 {
+        font-size: 1.75rem;
+      }
+
+      p {
+        margin-bottom: 1rem;
+      }
+
       .hidden {
-        display: none;
+        display: none !important;
+      }
+
+      .btn {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+      }
+
+      .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--primary-light);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn-secondary {
+        background-color: var(--surface-color);
+        color: var(--primary-color);
+        border: 1px solid var(--primary-color);
+      }
+
+      .btn-secondary:hover {
+        background-color: rgba(63, 81, 181, 0.08);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .card {
+        background-color: var(--surface-color);
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: box-shadow 0.3s ease;
+      }
+
+      .card:hover {
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+      }
+
+      input[type="text"],
+      input[type="email"],
+      textarea {
+        width: 100%;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        border: none;
+        border-bottom: 1px solid var(--text-secondary);
+        background-color: transparent;
+        transition: border-color 0.3s ease;
+      }
+
+      input[type="text"]:focus,
+      input[type="email"]:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--primary-color);
+      }
+
+      .section {
+        margin-bottom: 2rem;
+      }
+
+      .text-center {
+        text-align: center;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+      }
+
+      @media (max-width: 768px) {
+        h1 {
+          font-size: 2rem;
+        }
+
+        h2 {
+          font-size: 1.75rem;
+        }
+
+        h3 {
+          font-size: 1.5rem;
+        }
       }
     </style>
   </head>
   <body>
-    <div id="app">
-      <h1>Transform Audio and Video into Structured Documents</h1>
-      <h2>Enter a URL and we will e-mail you a document that sparks joy.</h2>
+    <div id="app" class="container">
+      <header class="section text-center">
+        <h1>Transform Audio into Actionable Knowledge</h1>
+        <h2>Unlock the Power of Spoken Content</h2>
+        <p>
+          Convert unlimited audio into structured, readable documents with
+          Platogram's cutting-edge AI technology.
+        </p>
+      </header>
 
-      <div id="auth-section">
-        <button id="login-button" onclick="login()" class="hidden">
+      <div id="auth-section" class="section text-center">
+        <button
+          id="login-button"
+          onclick="login()"
+          class="btn btn-primary hidden"
+        >
           Log In
         </button>
-        <button id="logout-button" onclick="logout()" class="hidden">
+        <button
+          id="logout-button"
+          onclick="logout()"
+          class="btn btn-secondary hidden"
+        >
           Log Out
         </button>
       </div>
 
-      <div id="main-section">
-        <div id="input-section">
+      <div id="main-section" class="section">
+        <div id="input-section" class="text-center">
           <input type="text" id="url-input" placeholder="Enter URL" />
           <input type="file" id="file-input" class="hidden" />
-          <button onclick="onConvertClick()">Convert</button>
+          <button onclick="onConvertClick()" class="btn btn-primary">
+            Convert
+          </button>
         </div>
 
-        <div id="status-section" class="hidden">
+        <div id="status-section" class="hidden text-center">
           <p>
             Working on it. You will receive an email from Artyom Astafurov with
             PDF, Word, and Markdown documents once ready.
           </p>
-          <button onclick="reset()">Cancel</button>
+          <button onclick="reset()" class="btn btn-secondary">Cancel</button>
         </div>
 
-        <div id="error-section" class="hidden">
+        <div id="error-section" class="hidden text-center">
           <p>An error occurred. Please try again.</p>
-          <button onclick="reset()">Reset</button>
+          <button onclick="reset()" class="btn btn-secondary">Reset</button>
         </div>
       </div>
-    </div>
 
+      <!-- <section class="section text-center">
+        <h3>Trusted by innovators and researchers across industries</h3>
+        <div class="grid">
+          <img src="/api/placeholder/100/50" alt="Partner logo" />
+          <img src="/api/placeholder/100/50" alt="Partner logo" />
+          <img src="/api/placeholder/100/50" alt="Partner logo" />
+        </div>
+      </section> -->
+
+      <section class="section">
+        <h3 class="text-center">
+          Revolutionize How You Capture and Utilize Audio Content
+        </h3>
+        <div class="grid">
+          <div class="card">
+            <h4>Beyond Transcription</h4>
+            <p>
+              Platogram doesn't just transcribe - it transforms speech into
+              high-quality, readable documents optimized for knowledge
+              retrieval.
+            </p>
+          </div>
+          <div class="card">
+            <h4>Privacy First</h4>
+            <p>
+              Your data stays yours. We process without storing, ensuring your
+              sensitive information remains confidential.
+            </p>
+          </div>
+          <div class="card">
+            <h4>Instant Delivery</h4>
+            <p>
+              Receive your processed content as PDF and Word documents directly
+              in your email inbox.
+            </p>
+          </div>
+          <div class="card">
+            <h4>Multiple Output Formats</h4>
+            <p>
+              Choose from various document types, including rewritten summaries
+              with or without transcripts and references.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3 class="text-center">How It Works</h3>
+        <div class="grid">
+          <div class="card">
+            <h4>1. Input Your Audio</h4>
+            <p>Provide a URL to your audio file (file upload coming soon!).</p>
+          </div>
+          <div class="card">
+            <h4>2. AI-Powered Processing</h4>
+            <p>
+              Our advanced AI analyzes and restructures the content, extracting
+              key information.
+            </p>
+          </div>
+          <div class="card">
+            <h4>3. Receive Your Document</h4>
+            <p>
+              Get a well-organized, readable document delivered straight to your
+              inbox.
+            </p>
+          </div>
+          <div class="card">
+            <h4>4. Explore and Share</h4>
+            <p>Easily search, analyze, and share the extracted knowledge.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3 class="text-center">Features That Set Us Apart</h3>
+        <div class="grid">
+          <div class="card">
+            <h4>🔒 Uncompromising Privacy</h4>
+            <p>
+              We process data without storing it, similar to Anthropic's privacy
+              standards. Only publicly available content from YouTube and Apple
+              Podcasts is retained.
+            </p>
+          </div>
+          <div class="card">
+            <h4>📊 Structured Knowledge Extraction</h4>
+            <p>
+              Transform unstructured audio into organized, insightful documents
+              with precise referencing to the original source.
+            </p>
+          </div>
+          <div class="card">
+            <h4>📧 Email Integration</h4>
+            <p>
+              Receive your processed documents directly in your inbox as PDF and
+              Word attachments.
+            </p>
+          </div>
+          <div class="card">
+            <h4>🌐 Seamless Workflow</h4>
+            <p>
+              Start with a simple URL input, with file upload functionality
+              coming soon to streamline your experience.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3 class="text-center">Unleash the Potential Across Industries</h3>
+        <ul>
+          <li>
+            <strong>Business Intelligence</strong>: Transform meetings and
+            conferences into searchable knowledge repositories.
+          </li>
+          <li>
+            <strong>Content Creation</strong>: Generate written content from
+            podcasts and videos effortlessly.
+          </li>
+          <li>
+            <strong>Medical Transcription</strong>: Capture and analyze
+            important healthcare discussions (regulations permitting).
+          </li>
+          <li>
+            <strong>Customer Service</strong>: Extract actionable insights from
+            customer interactions.
+          </li>
+          <li>
+            <strong>Personal Use</strong>: Keep written records of important
+            conversations, like doctor's appointments.
+          </li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h3 class="text-center">Pricing: Support Our Mission</h3>
+        <div class="card">
+          <p>
+            We believe in making knowledge accessible. That's why Platogram
+            operates on a donation-based model.
+          </p>
+          <h4>Suggested Donation</h4>
+          <p class="text-center">
+            <strong>$2 per hour of audio processed</strong>
+          </p>
+          <ul>
+            <li>Process as much audio as you need</li>
+            <li>Pay what you can, when you can</li>
+            <li>Help us keep Platogram accessible for everyone</li>
+          </ul>
+          <h4>How it works:</h4>
+          <ol>
+            <li>Use Platogram for free</li>
+            <li>Love the results? Consider donating</li>
+            <li>Your support helps us improve and maintain the service</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3 class="text-center">FAQs</h3>
+        <div class="grid">
+          <div class="card">
+            <h4>How accurate is Platogram?</h4>
+            <p>
+              Platogram utilizes state-of-the-art AI models, achieving high
+              accuracy across various domains.
+            </p>
+          </div>
+          <div class="card">
+            <h4>Is my data secure?</h4>
+            <p>
+              Absolutely. We process without storing data, ensuring maximum
+              privacy.
+            </p>
+          </div>
+          <div class="card">
+            <h4>What types of audio can Platogram process?</h4>
+            <p>
+              Platogram can handle a wide range of audio content, including
+              meetings, podcasts, lectures, and more.
+            </p>
+          </div>
+          <div class="card">
+            <h4>How do I receive my processed documents?</h4>
+            <p>
+              Your documents are delivered directly to your email inbox as PDF
+              and Word attachments.
+            </p>
+          </div>
+          <div class="card">
+            <h4>Is Platogram really free to use?</h4>
+            <p>
+              Yes! Platogram is free to use. We operate on a donation-based
+              model, so you can contribute if you find value in our service.
+            </p>
+          </div>
+          <div class="card">
+            <h4>Why do you suggest a donation of $2 per hour?</h4>
+            <p>
+              This amount helps cover our processing costs and allows us to keep
+              improving Platogram. However, you're welcome to donate any amount
+              you're comfortable with.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
     <script>
       let auth0Client = null;
 
