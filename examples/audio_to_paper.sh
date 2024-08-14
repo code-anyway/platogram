@@ -4,7 +4,7 @@ set -e
 
 URL="$1"
 LANG="en"
-INLINE_REFERENCES="false"
+VERBOSE="false"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -13,8 +13,8 @@ while [[ $# -gt 0 ]]; do
             shift
             shift
             ;;
-        --inline-references)
-            INLINE_REFERENCES="true"
+        --verbose)
+            VERBOSE="true"
             shift
             ;;
         *)
@@ -125,9 +125,7 @@ echo "Generating Documents..."
     sed -E 's/\[\[([0-9]+)\]\]\([^)]+\)//g' | \
     sed -E 's/\[([0-9]+)\]//g' | \
     tee \
-    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-no-refs.docx" --from markdown) \
-    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-no-refs.pdf" --from markdown --pdf-engine=xelatex) \
-    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-no-refs.md" --from markdown) > /dev/null
+    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-no-refs.pdf" --from markdown --pdf-engine=xelatex) > /dev/null
 
 # With References
 (
@@ -142,8 +140,16 @@ echo "Generating Documents..."
     echo $'## References\n\n'"$REFERENCES"$'\n'
 ) | \
     tee \
-    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-refs.docx" --from markdown) \
-    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-refs.pdf" --from markdown --pdf-engine=xelatex) \
-    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-refs.md" --from markdown) > /dev/null
+    >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-refs.docx" --from markdown) > /dev/null
 
 wait
+
+if [ "$VERBOSE" = true ]; then
+    echo "<title>"
+    echo "$TITLE"
+    echo "</title>"
+    echo
+    echo "<abstract>"
+    echo "$ABSTRACT"
+    echo "</abstract>"
+fi

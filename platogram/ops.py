@@ -1,6 +1,8 @@
-from tqdm import tqdm  # type: ignore
 import re
 from typing import Callable
+
+from tqdm import tqdm  # type: ignore
+
 from platogram.llm import LanguageModel
 from platogram.types import Content, SpeechEvent
 
@@ -214,8 +216,17 @@ def index(
 ) -> Content:
     text = render({i: event.text for i, event in enumerate(transcript)})
     paragraphs = get_paragraphs(text, llm, max_tokens, temperature, chunk_size, lang=lang)
-    title, summary = llm.get_meta(paragraphs, lang=lang)
-    chapters = llm.get_chapters(paragraphs, lang=lang)
+
+    try:
+        title, summary = llm.get_meta(paragraphs, lang=lang)
+    except Exception:
+        title, summary = "Missing Title", "Missing Summary"
+    
+    try:
+        chapters = llm.get_chapters(paragraphs, lang=lang)
+    except Exception:
+        chapters = {0: "All Content"}
+
     return Content(
         title=title,
         summary=summary,

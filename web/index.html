@@ -3,550 +3,538 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Platogram</title>
+    <title>Platogram - Transform Audio into Actionable Knowledge</title>
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap"
       rel="stylesheet"
     />
-    <style>
-      :root {
-        --primary-color: #3498db;
-        --primary-light: #5dade2;
-        --primary-dark: #2980b9;
-        --secondary-color: #2ecc71;
-        --accent-color: #f39c12;
-        --text-color: #333333;
-        --text-secondary: #7f8c8d;
-        --background-color: #ecf0f1;
-        --surface-color: #ffffff;
-        --error-color: #e74c3c;
-        --donate-color: #e67e22;
-        --donate-hover: #d35400;
-      }
-    
-      body {
-        font-family: "Roboto", sans-serif;
-        line-height: 1.6;
-        color: var(--text-color);
-        background-color: var(--background-color);
-        margin: 0;
-        padding: 0;
-      }
-    
-      .container {
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 0 20px;
-      }
-    
-      h1, h2, h3, h4, h5, h6 {
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        color: var(--primary-dark);
-      }
-    
-      h1 { font-size: 2.5rem; }
-      h2 { font-size: 2rem; }
-      h3 { font-size: 1.75rem; }
-      h4 { font-size: 1.5rem; }
-    
-      p {
-        margin-bottom: 0.75rem;
-      }
-    
-      .hidden {
-        display: none !important;
-      }
-    
-      .btn {
-        display: inline-block;
-        padding: 0.75rem 1.5rem;
-        border-radius: 4px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        text-decoration: none;
-        font-size: 1rem;
-        height: 48px;
-        line-height: 24px;
-        box-sizing: border-box;
-      }
-    
-      .btn-primary {
-        background-color: var(--primary-color);
-        color: white;
-      }
-    
-      .btn-primary:hover {
-        background-color: var(--primary-light);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-    
-      .btn-secondary {
-        background-color: var(--surface-color);
-        color: var(--primary-color);
-        border: 1px solid var(--primary-color);
-      }
-    
-      .btn-secondary:hover {
-        background-color: var(--accent-color);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-    
-      .btn-donate {
-        background-color: var(--donate-color);
-        color: white;
-      }
-    
-      .btn-donate:hover {
-        background-color: var(--donate-hover);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-    
-      .card {
-        background-color: var(--surface-color);
-        border-radius: 4px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-        padding: 1rem;
-        margin-bottom: 1rem;
-        transition: box-shadow 0.3s ease;
-      }
-    
-      .card:hover {
-        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
-      }
-    
-      input[type="text"],
-      input[type="email"],
-      textarea {
-        width: 100%;
-        padding: 0.5rem;
-        margin-bottom: 1rem;
-        border: none;
-        border-bottom: 1px solid var(--text-secondary);
-        background-color: transparent;
-        transition: border-color 0.3s ease;
-      }
-    
-      input[type="text"]:focus,
-      input[type="email"]:focus,
-      textarea:focus {
-        outline: none;
-        border-color: var(--primary-color);
-      }
-    
-      .section {
-        margin-bottom: 2rem;
-        padding: 2rem 0;
-      }
-    
-      .text-center {
-        text-align: center;
-      }
-    
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1rem;
-      }
-    
-      #main-section {
-        background-color: var(--primary-color);
-        color: var(--surface-color);
-        padding: 3rem 0;
-        text-align: center;
-      }
-    
-      #main-section h1 {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        color: var(--surface-color);
-      }
-    
-      #main-section h2 {
-        font-size: 1.5rem;
-        margin-bottom: 2rem;
-        color: var(--surface-color);
-      }
-    
-      #input-section {
-        background-color: var(--secondary-color);
-        color: var(--surface-color);
-        padding: 2rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        align-items: center;
-        gap: 1rem;
-      }
-    
-      #input-section input[type="text"] {
-        flex: 1;
-        min-width: 200px;
-        margin: 0;
-        padding: 0.75rem;
-        border: none;
-        border-radius: 4px;
-        font-size: 1rem;
-        background-color: rgba(255, 255, 255, 0.9);
-        color: var(--text-color);
-        height: 48px;
-        box-sizing: border-box;
-      }
-    
-      #input-section .btn {
-        margin: 0;
-        flex-basis: 150px;
-      }
-    
-      #pricing {
-        background-color: var(--surface-color);
-        padding: 2rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        text-align: center;
-      }
-    
-      #pricing h3 {
-        color: var(--primary-dark);
-        margin-bottom: 1rem;
-      }
-    
-      #pricing .price {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: var(--primary-color);
-        margin-bottom: 1rem;
-      }
-    
-      @media (max-width: 768px) {
-        h1 { font-size: 2rem; }
-        h2 { font-size: 1.75rem; }
-        h3 { font-size: 1.5rem; }
-        #main-section h1 { font-size: 2.5rem; }
-        #main-section h2 { font-size: 1.25rem; }
-        
-        #input-section {
-          flex-direction: column;
-        }
-    
-        #input-section input[type="text"],
-        #input-section .btn {
-          width: 100%;
-          margin-bottom: 1rem;
-        }
-    
-        #input-section .btn:last-child {
-          margin-bottom: 0;
-        }
-      }
-    /* Add new styles for additional sections */
-    .feature-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-top: 2rem;
-      }
-      
-      .feature-item {
-        text-align: center;
-        padding: 1rem;
-      }
-      
-      .feature-icon {
-        font-size: 2rem;
-        margin-bottom: 0.5rem;
-      }
-      
-      .testimonial {
-        font-style: italic;
-        margin-bottom: 1rem;
-      }
-      
-      .industry-list {
-        list-style-type: none;
-        padding: 0;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-around;
-      }
-      
-      .industry-list li {
-        flex-basis: 45%;
-        margin-bottom: 1rem;
-      }
-      
-      .logo-container {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        flex-wrap: wrap;
-        margin: 2rem 0;
-      }
-      
-      .logo-container img {
-        max-width: 100px;
-        height: auto;
-        margin: 1rem;
-      }
-      footer {
-        background-color: var(--primary-dark);
-        color: var(--surface-color);
-        text-align: center;
-        padding: 1rem 0;
-        margin-top: 2rem;
-      }
-      
-      footer p {
-        margin: 0;
-      }
-    </style>
   </head>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap");
+    :root {
+      --dark-blue: #00008b;
+      --medium-blue: #0000cd;
+      --dark-red: #8b0000;
+      --medium-red: #cd0000;
+      --light-gray: #f0f0f0;
+      --lighter-gray: #f8f8f8;
+      --white: #ffffff;
+      --text-color: #333;
+    }
+    body,
+    html {
+      height: 100%;
+      margin: 0;
+      font-family: "Open Sans", sans-serif;
+      line-height: 1.6;
+      color: var(--text-color);
+      background-color: var(--light-gray);
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 100%;
+      background-color: var(--white);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    header {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 20px;
+    }
+    h1,
+    h2,
+    h3 {
+      color: var(--dark-blue);
+      text-align: center;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: 2.5em;
+    }
+    h2 {
+      font-size: 2em;
+    }
+    h3 {
+      font-size: 1.5em;
+    }
+    p {
+      font-size: 1em;
+      line-height: 1.6;
+    }
+    .cta-container {
+      text-align: center;
+      margin: 30px 0;
+      padding: 20px;
+      border: 2px solid var(--dark-blue);
+      border-radius: 15px;
+      background-color: var(--lighter-gray);
+    }
+    .cta {
+      background-color: var(--dark-blue);
+      color: var(--white);
+      padding: 15px 30px;
+      text-decoration: none;
+      border-radius: 25px;
+      display: inline-block;
+      margin: 10px;
+      font-size: 1.1em;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+    }
+    .cta:hover {
+      background-color: var(--medium-blue);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .donate {
+      background-color: var(--dark-red);
+    }
+    .donate:hover {
+      background-color: var(--medium-red);
+    }
+    .donate-button-container {
+      margin-top: 20px;
+      text-align: center;
+    }
+    section {
+      margin-bottom: 40px;
+      padding: 20px;
+      background-color: var(--lighter-gray);
+      border-radius: 10px;
+      text-align: center;
+    }
+    ul,
+    ol {
+      display: inline-block;
+      text-align: left;
+      padding-left: 20px;
+    }
+    .examples a {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--dark-blue);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+    .examples a:hover {
+      color: var(--medium-blue);
+      text-decoration: underline;
+    }
+    .features,
+    .use-cases {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+    }
+    .feature,
+    .use-case {
+      flex-basis: 30%;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .feature h3 {
+      text-align: left;
+    }
+    .use-case h3 {
+      text-align: left;
+    }
+    input[type="text"] {
+      padding: 10px;
+      width: 70%;
+      margin-bottom: 10px;
+      border: 1px solid var(--dark-blue);
+      border-radius: 25px;
+      font-family: "Open Sans", sans-serif;
+      font-size: 1em;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 10px;
+    }
+    .pricing {
+      background-color: var(--light-gray);
+      padding: 30px;
+      border-radius: 15px;
+      margin-top: 30px;
+    }
+    .pricing h3 {
+      color: var(--dark-red);
+    }
+    .hidden {
+      display: none;
+    }
+    footer {
+      margin-top: 40px;
+      padding: 20px;
+      background-color: var(--lighter-gray);
+      border-radius: 10px;
+      text-align: center;
+      font-size: 0.9em;
+    }
+    footer a {
+      color: var(--dark-blue);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.3s ease;
+    }
+    footer a:hover {
+      color: var(--medium-blue);
+      text-decoration: underline;
+    }
+    .input-wrapper {
+  position: relative;
+  width: 70%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+#url-input {
+  width: 100%;
+  padding: 10px;
+  padding-right: 40px;
+  box-sizing: border-box;
+}
+
+.upload-button {
+  position: absolute;
+  right: 10px;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0 10px;
+}
+
+.upload-icon {
+  font-size: 20px;
+  line-height: 1;
+  transform: translateY(-5px); /* Adjust this value to fine-tune vertical position */
+}
+
+#file-upload {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+  </style>
   <body>
-    <div id="app" class="container">
-      <header id="main-section" class="section">
-        <h1>Transform Audio into Actionable Knowledge</h1>
-        <h2>Unlock the Power of Spoken Content</h2>
-        <p>
-          Convert unlimited audio into structured, readable documents with Platogram.
-        </p> 
+    <div class="container">
+      <header>
+        <a href="#" class="cta" onclick="login()" id="login-button">Log In</a>
+        <a href="#" class="cta" onclick="logout()" id="logout-button">Log Out</a>
       </header>
 
-      <!-- <div class="logo-container">
-        <img src="/api/placeholder/100/50" alt="Partner Logo 1" />
-        <img src="/api/placeholder/100/50" alt="Partner Logo 2" />
-        <img src="/api/placeholder/100/50" alt="Partner Logo 3" />
-        <img src="/api/placeholder/100/50" alt="Partner Logo 4" />
-      </div> -->
+      <main>
+        <h1>Transform Speech into Knowledge</h1>
 
-      <div id="auth-section" class="section text-center">
-        <button
-          id="login-button"
-          onclick="login()"
-          class="btn btn-primary hidden"
-        >
-          Log In
-        </button>
-        <button
-          id="logout-button"
-          onclick="logout()"
-          class="btn btn-secondary hidden"
-        >
-          Log Out
-        </button>
-      </div>
+        <div id="input-section" class="cta-container">
+          <p>
+            Convert hours of audio into structured, readable documents
+          </p>
+          <div class="input-wrapper">
+            <input type="text" id="url-input" placeholder="Link to YouTube, Google Drive, audio, transcript, or upload" />
+            <label for="file-upload" class="upload-button">
+              <span class="upload-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </span>
+              <input
+                type="file"
+                id="file-upload"
+                accept=".srt,.wav,.ogg,.vtt,.mp3,.mp4,.m4a"
+                style="display: none"
+                onchange="onConvertClick()"
+              />
+            </label>
+          </div>
+          <a href="#" class="cta" onclick="onConvertClick()">Convert</a>
+          <a href="#" class="cta donate" onclick="onDonateClick()">Donate</a>
+        </div>
 
-      <div id="input-section" class="section text-center">
-        <input type="text" id="url-input" placeholder="Enter URL" />
-        <input type="file" id="file-input" class="hidden" />
-        <button onclick="onConvertClick()" class="btn btn-primary">
-          Convert
-        </button>
-        <button onclick="showDonateModal()" class="btn btn-donate">
-          Donate
-        </button>
-      </div>
+        <div id="done-section" class="cta-container hidden">
+          <div class="success-icon">&#10004;</div>
+          <p>
+            Done! Please check your e-mail inbox in a few minutes.
+          </p>
+          <button onclick="reset()" class="cta">Got it!</button>
+        </div>
+        <style>
+          .success-icon {
+            font-size: 48px;
+            color: #4CAF50;
+            margin-bottom: 15px;
+          }
+        
+          #done-section {
+            background-color: #E8F5E9;
+            border: 2px solid #4CAF50;
+          }
+        
+          #done-section p {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2E7D32;
+          }
+        
+          #done-section .cta {
+            background-color: #4CAF50;
+          }
+        
+          #done-section .cta:hover {
+            background-color: #45a049;
+          }
+        </style>
+        <div id="status-section" class="cta-container hidden">
+          <p>
+            Working on it. You will receive an email from Artyom Astafurov with
+            PDF, Word, and Markdown documents once ready.
+          </p>
+          <p>
+            Processing time is quick - about 5 mins for each hour of content. Hang tight!
+          </p>
+          <div id="animation-container">
+            <div id="runner"></div>
+            <p id="processing-stage"></p>
+          </div>
+          <button class="cta donate" onclick="onDonateClick()">Donate</button>
+          <!-- <button onclick="reset()">Cancel</button> -->
+        </div>
+        <style>
+          #animation-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+          #runner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #00008b;
+            border-radius: 50%;
+            animation: run 8s linear infinite;
+          }
+          #processing-stage {
+            text-align: center;
+            font-weight: bold;
+            position: absolute;
+            width: 100%;
+            padding: 10px;
+          }
+          @keyframes run {
+            0%, 100% { top: -10px; left: -10px; }
+            25% { top: -10px; left: calc(100% - 10px); }
+            50% { top: calc(100% - 10px); left: calc(100% - 10px); }
+            75% { top: calc(100% - 10px); left: -10px; }
+          }
+        </style>
+        <script>
+          const processingStages = [
+            "Byte Whispering", "Qubit Juggling", "Syntax Gymnastics",
+            "Pixel Wrangling", "Neuron Tickling", "Algorithm Disco",
+            "Data Origami", "Bit Barbecue", "Logic Limbo",
+            "Quantum Knitting"
+          ];
+          let currentStageIndex = 0;
+          
+          function updateProcessingStage() {
+            document.getElementById('processing-stage').textContent = processingStages[currentStageIndex];
+            currentStageIndex = (currentStageIndex + 1) % processingStages.length;
+          }
+        
+          setInterval(updateProcessingStage, 3000);
+          updateProcessingStage(); // Initial update
+        </script>
+        <div id="error-section" class="cta-container hidden">
+          <p>An error occurred. Please try again.</p>
+          <button onclick="reset()" class="cta">Reset</button>
+        </div>
 
-      <div id="status-section" class="hidden text-center">
+        <section>
+          <div class="features">
+            <div class="feature">
+              <h3>Sparks Joy</h3>
+              <p>
+                Platogram doesn't just transcribe - it transforms speech into
+                high-quality, readable documents optimized for knowledge
+                retrieval.
+              </p>
+            </div>
+            <div class="feature">
+              <h3>Privacy First</h3>
+              <p>
+                Your data stays yours. We process without storing, ensuring your
+                sensitive information remains confidential.
+              </p>
+            </div>
+            <div class="feature">
+              <h3>Just Works</h3>
+              <p>
+                Drop a link or a file with audio or transcript and we will
+                e-mail you a well-organized, readable document.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="examples-section">
+          <h2>Examples</h2>
+          <style>
+            .examples-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+              gap: 20px;
+              justify-content: start;
+              align-items: start;
+            }
+            .example-card {
+              background-color: #f5f5f5;
+              border-radius: 8px;
+              padding: 20px;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+              text-align: left;
+            }
+            .example-card h3 {
+              margin-top: 0;
+              font-size: 1.2em;
+              color: var(--dark-blue);
+              text-align: left;
+            }
+            .example-card .sample-link {
+              display: inline-block;
+              margin: 10px 0;
+              color: var(--medium-blue);
+              text-decoration: none;
+              font-weight: bold;
+            }
+            .example-card .example-description {
+              font-size: 0.9em;
+              color: #555;
+            }
+          </style>
+          <div class="examples-grid">
+            <div class="example-card">
+              <h3>John Carmack: From Gaming Pioneer to AI Visionary</h3>
+              <a href="https://drive.google.com/file/d/1_w9mv4_mBVSwK4NSnybGXtRysaT7ROFT/view?usp=drive_link" target="_blank" class="sample-link">View sample output</a>
+              <p class="example-description">Transform a 5-hour podcast into a structured document that sparks joy.</p>
+            </div>
+            
+            <div class="example-card">
+              <h3>Hair Cells: The Remarkable Sensory Receptors of Hearing</h3>
+              <a href="https://drive.google.com/file/d/1Kswr1tMuS6c0a0tNn9OCuZCuPuP0FLr-/view?usp=drive_link" target="_blank" class="sample-link">View sample output</a>
+              <p class="example-description">Convert this inspiring TED talk into a readable format with key insights highlighted.</p>
+            </div>
+            
+            <div class="example-card">
+              <h3>Court Hearing: Data Disclosure and Trial Scheduling</h3>
+              <a href="https://drive.google.com/file/d/1c_70MVz0fb7Zh0teirYt6Pc6S1hMomKV/view?usp=drive_link" target="_blank" class="sample-link">View sample output</a>
+              <p class="example-description">See how Platogram transforms courtroom transcript into a structured document.</p>
+            </div>
+            
+            <div class="example-card">
+              <h3>Building and Training GPT-2 from Scratch</h3>
+              <a href="https://drive.google.com/file/d/1w98NFdfeSObpgr-Tmm40zB2UOYctWTaS/view?usp=drive_link" target="_blank" class="sample-link">View sample output</a>
+              <p class="example-description">Experience how a complex academic lecture is transformed into a structured, citable document.</p>
+            </div>
+            
+            <div class="example-card">
+              <h3>Intel Q2 2024 Earnings Call: Restructuring and Cost Cutting</h3>
+              <a href="https://drive.google.com/file/d/14HFC36r6xLGBCDrSUdRTi50Z8SXCHD7q/view?usp=drive_link" target="_blank" class="sample-link">View sample output</a>
+              <p class="example-description">Observe how Platogram captures and organizes key points from a business discussion.</p>
+            </div>
+            <div class="example-card">
+              <h3>Conversation with Mark Zuckerberg</h3>
+              <a href="https://drive.google.com/file/d/1DbtND485AFmUv4XVb4mgZgXo27JxdkzE/view?usp=drive_link" target="_blank" class="sample-link">View sample output</a>
+              <p class="example-description">Insights on AI, entrepreneurship, and personal growth in a readable format.</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>Use Cases</h2>
+          <div class="use-cases">
+            <div class="use-case">
+              <h3>Learning</h3>
+              <p>
+                Turn podcasts, lectures, and interviews into readable, searchable,
+                shareable documents.
+              </p>
+            </div>
+            <div class="use-case">
+              <h3>Drafting</h3>
+              <p>
+                Convert raw ideas and discussions into polished drafts for legal
+                briefs, academic papers, and research proposals, streamlining
+                the writing process.
+              </p>
+            </div>
+            <div class="use-case">
+              <h3>Professional</h3>
+              <p>
+                Capture key insights from business meetings, coaching sessions,
+                and client calls, ensuring no valuable information is lost.
+              </p>
+            </div>
+        </section>
+        
+        <section>
+          <h2>Pricing: Support Our Mission</h2>
+          <p>
+            We believe in making knowledge accessible. That's why Platogram
+            operates on a donation-based model.
+          </p>
+          <div class="pricing">
+            <h3>Suggested Donation: $2 per hour of audio processed</h3>
+            <p>Your donation supports:</p>
+            <ul>
+              <li>AI inference costs</li>
+              <li>Making Platogram accessible for all users</li>
+              <li>Building fully-offline version of Platogram</li>
+            </ul>
+            <div class="donate-button-container">
+              <a href="#" class="cta donate" onclick="onDonateClick()">Donate Now</a>
+            </div>
+          </div>
+        </section>
+      </main>
+      <footer>
         <p>
-          Working on it. You will receive an email from Artyom Astafurov with
-          PDF, Word, and Markdown documents once ready.
+          Platogram is built with 💜 in New York and Boston by
+          <a
+            href="https://codeanyway.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Code Anyway, Inc</a
+          >
+          in 2023-2024
         </p>
-        <button onclick="reset()" class="btn btn-secondary">Cancel</button>
-      </div>
-
-      <div id="error-section" class="hidden text-center">
-        <p>An error occurred. Please try again.</p>
-        <button onclick="reset()" class="btn btn-secondary">Reset</button>
-      </div>
-
-      <section class="section">
-        <h3 class="text-center">
-          Revolutionize How You Capture and Utilize Audio Content
-        </h3>
-        <div class="grid">
-          <div class="card">
-            <h4>Beyond Transcription</h4>
-            <p>
-              Platogram doesn't just transcribe - it transforms speech into
-              high-quality, readable documents optimized for knowledge
-              retrieval.
-            </p>
-          </div>
-          <div class="card">
-            <h4>Privacy First</h4>
-            <p>
-              Your data stays yours. We process without storing, ensuring your
-              sensitive information remains confidential.
-            </p>
-          </div>
-          <div class="card">
-            <h4>Instant Delivery</h4>
-            <p>
-              Receive your processed content as PDF and Word documents directly
-              in your email inbox.
-            </p>
-          </div>
-          <div class="card">
-            <h4>Multiple Output Formats</h4>
-            <p>
-              Choose from various document types, including rewritten summaries
-              with or without transcripts and references.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <h3 class="text-center">How It Works</h3>
-        <div class="grid">
-          <div class="card">
-            <h4>Input Your Audio</h4>
-            <p>Provide a URL to your audio file (file upload coming soon!).</p>
-          </div>
-          <div class="card">
-            <h4>AI-Powered Processing</h4>
-            <p>Our advanced AI analyzes and restructures the content, extracting key information.</p>
-          </div>
-          <div class="card">
-            <h4>Receive Your Document</h4>
-            <p>Get a well-organized, readable document delivered straight to your inbox.</p>
-          </div>
-          <div class="card">
-            <h4>Explore and Share</h4>
-            <p>Easily search, analyze, and share the extracted knowledge.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <h3 class="text-center">Features That Set Us Apart</h3>
-        <div class="feature-grid">
-          <div class="feature-item">
-            <div class="feature-icon">🔒</div>
-            <h4>Uncompromising Privacy</h4>
-            <p>We process data without storing it, similar to Anthropic's privacy standards.</p>
-          </div>
-          <div class="feature-item">
-            <div class="feature-icon">📊</div>
-            <h4>Structured Knowledge Extraction</h4>
-            <p>Transform unstructured audio into organized, insightful documents.</p>
-          </div>
-          <div class="feature-item">
-            <div class="feature-icon">📧</div>
-            <h4>Email Integration</h4>
-            <p>Receive your processed documents directly in your inbox.</p>
-          </div>
-          <div class="feature-item">
-            <div class="feature-icon">🌐</div>
-            <h4>Seamless Workflow</h4>
-            <p>Start with a simple URL input, with file upload coming soon.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <h3 class="text-center">Unleash the Potential Across Industries</h3>
-        <ul class="industry-list">
-          <li><strong>Business Intelligence:</strong> Transform meetings and conferences into searchable knowledge repositories.</li>
-          <li><strong>Content Creation:</strong> Generate written content from podcasts and videos effortlessly.</li>
-          <li><strong>Medical Transcription:</strong> Capture and analyze important healthcare discussions (regulations permitting).</li>
-          <li><strong>Customer Service:</strong> Extract actionable insights from customer interactions.</li>
-          <li><strong>Personal Use:</strong> Keep written records of important conversations, like doctor's appointments.</li>
-        </ul>
-      </section>
-
-      <!-- <section class="section">
-        <h3 class="text-center">What Our Users Say</h3>
-        <div class="grid">
-          <div class="card">
-            <p class="testimonial">"Platogram has revolutionized how we handle knowledge extraction from audio. The quality of summaries is incredible!"</p>
-            <p><em>- Jane Smith, Product Manager</em></p>
-          </div>
-          <div class="card">
-            <p class="testimonial">"As a podcaster, Platogram has opened up new avenues for content creation. It's a game-changer!"</p>
-            <p><em>- John Doe, Top 10 Tech Podcaster</em></p>
-          </div>
-        </div>
-      </section> -->
-
-      <section id="pricing" class="section">
-        <h3>Pricing: Support Our Mission</h3>
-        <p>We believe in making knowledge accessible. That's why Platogram operates on a donation-based model.</p>
-        <div class="price">$2 per hour of audio processed</div>
-        <p><strong>Suggested Donation</strong></p>
-        <ul style="text-align: left; display: inline-block;">
-          <li>Process as much audio as you need</li>
-          <li>Pay what you can, when you can</li>
-          <li>Help us keep Platogram accessible for everyone</li>
-        </ul>
-        <p>Your support helps us improve and maintain the service.</p>
-        <button onclick="showDonateModal()" class="btn btn-donate">
-          Donate Now
-        </button>
-      </section>
-
-      <section class="section">
-        <h3 class="text-center">FAQs</h3>
-        <div class="grid">
-          <div class="card">
-            <h4>How accurate is Platogram?</h4>
-            <p>
-              Platogram utilizes state-of-the-art AI models, achieving high
-              accuracy across various domains.
-            </p>
-          </div>
-          <div class="card">
-            <h4>Is my data secure?</h4>
-            <p>
-              Absolutely. We process without storing data, ensuring maximum
-              privacy.
-            </p>
-          </div>
-          <div class="card">
-            <h4>What types of audio can Platogram process?</h4>
-            <p>
-              Platogram can handle a wide range of audio content, including
-              meetings, podcasts, lectures, and more.
-            </p>
-          </div>
-          <div class="card">
-            <h4>How do I receive my processed documents?</h4>
-            <p>
-              Your documents are delivered directly to your email inbox as PDF
-              and Word attachments.
-            </p>
-          </div>
-          <div class="card">
-            <h4>Is Platogram really free to use?</h4>
-            <p>
-              Yes! Platogram is free to use. We operate on a donation-based model, so you can contribute if you find value in our service.
-            </p>
-          </div>
-          <div class="card">
-            <h4>Why do you suggest a donation of $2 per hour?</h4>
-            <p>
-              This amount helps cover our processing costs and allows us to keep improving Platogram. However, you're welcome to donate any amount you're comfortable with.
-            </p>
-          </div>
-        </div>
-      </section>
+      </footer>
     </div>
-
-    <footer>
-      <p>
-        Platogram is built with 💜 in New York and Boston by 
-        <a href="https://codeanyway.com" target="_blank" rel="noopener noreferrer">Code Anyway, Inc</a> 
-        in 2023-2024
-      </p>
-    </footer>
-
     <script>
       let auth0Client = null;
 
@@ -571,13 +559,6 @@
           if (query.includes("code=") && query.includes("state=")) {
             await auth0Client.handleRedirectCallback();
             window.history.replaceState({}, document.title, "/");
-
-            // Check if there's saved input data and process it
-            const savedInputData = sessionStorage.getItem("inputData");
-            if (savedInputData) {
-              await postToConvert(JSON.parse(savedInputData));
-              sessionStorage.removeItem("inputData");
-            }
           }
 
           await updateUI();
@@ -590,16 +571,21 @@
         const inputSection = document.getElementById("input-section");
         const statusSection = document.getElementById("status-section");
         const errorSection = document.getElementById("error-section");
+        const doneSection = document.getElementById("done-section");
 
         inputSection.classList.add("hidden");
         statusSection.classList.add("hidden");
         errorSection.classList.add("hidden");
+        doneSection.classList.add("hidden");
 
         switch (status) {
-          case "processing":
+          case "running":
             statusSection.classList.remove("hidden");
             break;
-          case "complete":
+          case "done":
+            doneSection.classList.remove("hidden");
+            break;
+          case "idle":
             inputSection.classList.remove("hidden");
             break;
           case "error":
@@ -650,10 +636,6 @@
 
           // Clear input fields
           document.getElementById("url-input").value = "";
-          document.getElementById("file-input").value = "";
-
-          // Clear any stored input data
-          sessionStorage.removeItem("inputData");
 
           // Poll status after reset
           pollStatus(token);
@@ -663,12 +645,58 @@
         }
       }
 
+      async function onDonateClick() {
+        // Open Stripe payment link in a new tab
+        window.open("https://buy.stripe.com/eVa29p3PK5OXbq84gl", "_blank");
+      }
+
       // Handle the 'Convert' button click
       async function onConvertClick() {
         const inputData = getInputData();
-        sessionStorage.setItem("inputData", JSON.stringify(inputData));
         if (await auth0Client.isAuthenticated()) {
-          await postToConvert(inputData);
+          // Create and show the language selection modal
+          const modal = document.createElement('div');
+          modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+          `;
+
+          const modalContent = document.createElement('div');
+          modalContent.style.cssText = `
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+          `;
+
+          modalContent.innerHTML = `
+            <h3>Select Language</h3>
+            <button id="en-btn">English</button>
+            <button id="es-btn">Spanish</button>
+            <button id="cancel-btn">Cancel</button>
+          `;
+
+          modal.appendChild(modalContent);
+          document.body.appendChild(modal);
+
+          // Handle language selection
+          const handleLanguageSelection = async (lang) => {
+            document.body.removeChild(modal);
+            await postToConvert(inputData, lang);
+          };
+
+          document.getElementById('en-btn').onclick = () => handleLanguageSelection('en');
+          document.getElementById('es-btn').onclick = () => handleLanguageSelection('es');
+          document.getElementById('cancel-btn').onclick = () => document.body.removeChild(modal);
+          // await postToConvert(inputData);
         } else {
           login();
         }
@@ -677,7 +705,7 @@
       // Get input data (URL or File)
       function getInputData() {
         const urlInput = document.getElementById("url-input").value;
-        const fileInput = document.getElementById("file-input").files[0];
+        const fileInput = document.getElementById("file-upload").files[0];
         return urlInput || fileInput;
       }
 
@@ -707,18 +735,33 @@
         }
       }
 
-      async function postToConvert(inputData) {
+      async function postToConvert(inputData, lang) {
+        let body;
+        let headers = {
+          Authorization: `Bearer ${await auth0Client.getTokenSilently({
+            audience: "https://web.platogram.ai",
+          })}`,
+        };
+
+        const formData = new FormData();
+        formData.append('lang', lang);
+
+        if (inputData instanceof File) {
+          formData.append('file', inputData);
+        } else {
+          formData.append("payload", inputData);
+        }
+
+        body = formData;
+        
         try {
           const token = await auth0Client.getTokenSilently({
             audience: "https://web.platogram.ai",
           });
           const response = await fetch("/convert", {
             method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ payload: inputData }),
+            headers: headers,
+            body: body,
           });
           const result = await response.json();
 
@@ -729,7 +772,7 @@
           }
         } catch (error) {
           console.error("Error:", error);
-          updateUIStatus("error", "Something went wrong...");
+          updateUIStatus("error", error);
         }
       }
 
@@ -742,19 +785,21 @@
           });
           const result = await response.json();
 
-          if (result.status === "busy") {
-            updateUIStatus("processing");
+          if (result.status === "running") {
+            updateUIStatus("running");
             setTimeout(() => pollStatus(token), 5000); // Poll every 5 seconds
           } else if (result.status === "idle") {
-            updateUIStatus("complete");
+            updateUIStatus("idle");
           } else if (result.status === "failed") {
-            updateUIStatus("error", result.error);
+            updateUIStatus("failed", result.error);
+          } else if (result.status === "done") {
+            updateUIStatus("done");
           } else {
-            updateUIStatus("error", response.error);
+            updateUIStatus("failed", response.error);
           }
         } catch (error) {
           console.error("Error polling status:", error);
-          updateUIStatus("error", "Something went wrong...");
+          updateUIStatus("error", error);
         }
       }
 
@@ -763,5 +808,62 @@
         console.error("Error initializing app:", error)
       );
     </script>
+    <!-- Start of LiveChat (www.livechat.com) code -->
+    <script>
+      window.__lc = window.__lc || {};
+      window.__lc.license = 18397149;
+      window.__lc.integration_name = "manual_onboarding";
+      window.__lc.product_name = "livechat";
+      (function (n, t, c) {
+        function i(n) {
+          return e._h ? e._h.apply(null, n) : e._q.push(n);
+        }
+        var e = {
+          _q: [],
+          _h: null,
+          _v: "2.0",
+          on: function () {
+            i(["on", c.call(arguments)]);
+          },
+          once: function () {
+            i(["once", c.call(arguments)]);
+          },
+          off: function () {
+            i(["off", c.call(arguments)]);
+          },
+          get: function () {
+            if (!e._h)
+              throw new Error(
+                "[LiveChatWidget] You can't use getters before load."
+              );
+            return i(["get", c.call(arguments)]);
+          },
+          call: function () {
+            i(["call", c.call(arguments)]);
+          },
+          init: function () {
+            var n = t.createElement("script");
+            (n.async = !0),
+              (n.type = "text/javascript"),
+              (n.src = "https://cdn.livechatinc.com/tracking.js"),
+              t.head.appendChild(n);
+          },
+        };
+        !n.__lc.asyncInit && e.init(),
+          (n.LiveChatWidget = n.LiveChatWidget || e);
+      })(window, document, [].slice);
+    </script>
+    <noscript
+      ><a href="https://www.livechat.com/chat-with/18397149/" rel="nofollow"
+        >Chat with us</a
+      >, powered by
+      <a
+        href="https://www.livechat.com/?welcome"
+        rel="noopener nofollow"
+        target="_blank"
+        >LiveChat</a
+      ></noscript
+    >
+    <!-- End of LiveChat code -->
   </body>
 </html>

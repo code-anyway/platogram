@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import smtplib
 import tempfile
 import time
@@ -10,13 +11,22 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Literal, Optional
+from uuid import uuid4
 
 import httpx
 import jwt
 import logfire
 from cryptography.hazmat.primitives import serialization
 from cryptography.x509 import load_pem_x509_certificate
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+)
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
@@ -117,12 +127,35 @@ async def verify_token_and_get_user_id(token: str = Depends(oauth2_scheme)):
 @app.post("/convert")
 @logfire.instrument()
 async def convert(
-    request: ConversionRequest,
     background_tasks: BackgroundTasks,
     user_id: str = Depends(verify_token_and_get_user_id),
+    file: Optional[UploadFile] = File(None),
+    payload: Optional[str] = Form(None),
+    lang: Optional[Language] = Form(None),
 ):
-    if user_id in tasks:
+    if not lang:
+        lang = "en"
+
+    if user_id in tasks and tasks[user_id].status == "running":
         raise HTTPException(status_code=400, detail="Conversion already in progress")
+
+    if payload is None and file is None:
+        raise HTTPException(status_code=400, detail="Either payload or file must be provided")
+
+    if payload is not None:
+        request = ConversionRequest(payload=payload, lang=lang)
+    else:
+        # Create a named temporary directory if it doesn't exist
+        tmpdir = Path(tempfile.gettempdir()) / "platogram_uploads"
+        tmpdir.mkdir(parents=True, exist_ok=True)
+        file_ext = file.filename.split(".")[-1]
+        temp_file = Path(tmpdir) / f"{uuid4()}.{file_ext}" 
+        file_content = await file.read()
+        with open(temp_file, "wb") as fd:
+            fd.write(file_content)
+            fd.close()
+
+        request = ConversionRequest(payload=f"file://{temp_file}", lang=lang)
 
     tasks[user_id] = Task(start_time=datetime.now(), request=request)
     background_tasks.add_task(convert_and_send_with_error_handling, request, user_id)
@@ -134,9 +167,11 @@ async def status(user_id: str = Depends(verify_token_and_get_user_id)) -> dict:
     if user_id not in tasks:
         return {"status": "idle"}
     if tasks[user_id].status == "running":
-        return {"status": "busy"}
+        return {"status": "running"}
     if tasks[user_id].status == "failed":
         return {"status": "failed", "error": tasks[user_id].error}
+    if tasks[user_id].status == "done":
+        return {"status": "done"}
     return {"status": "idle"}
 
 
@@ -156,7 +191,7 @@ async def reset(user_id: str = Depends(verify_token_and_get_user_id)):
 async def audio_to_paper(url: str, lang: Language, output_dir: Path, user_id: str) -> tuple[str, str]:
     # Get absolute path of current working directory
     script_path = Path.cwd() / "examples" / "audio_to_paper.sh"
-    command = f"cd {output_dir} && {script_path} {url} --lang {lang}"
+    command = f"cd {output_dir} && {script_path} \"{url}\" --lang {lang} --verbose"
 
     if user_id in processes:
         raise RuntimeError("Conversion already in progress.")
@@ -168,7 +203,12 @@ async def audio_to_paper(url: str, lang: Language, output_dir: Path, user_id: st
         shell=True
     )
     processes[user_id] = process
-    stdout, stderr = await process.communicate()
+
+    try:
+        stdout, stderr = await process.communicate()
+    finally:
+        if user_id in processes:
+            del processes[user_id]
 
     if process.returncode != 0:
         raise RuntimeError(f"""Failed to execute {command} with return code {process.returncode}.
@@ -207,14 +247,52 @@ async def convert_and_send_with_error_handling(request: ConversionRequest, user_
 
 async def convert_and_send(request: ConversionRequest, user_id: str):
     with tempfile.TemporaryDirectory() as tmpdir:
-        if not request.payload.startswith("http"):
+        if not (request.payload.startswith("http") or request.payload.startswith("file:///tmp/platogram_uploads")):
             raise HTTPException(status_code=400, detail="Please provide a valid URL.")
         else:
             url = request.payload
 
-        stdout, stderr = await audio_to_paper(url, request.lang, Path(tmpdir), user_id)
+        try:
+            stdout, stderr = await audio_to_paper(url, request.lang, Path(tmpdir), user_id)
+        finally:
+            if request.payload.startswith("file:///tmp/platogram_uploads"):
+                try:
+                    os.remove(request.payload.replace("file:///tmp/platogram_uploads", "/tmp/platogram_uploads"))
+                except OSError as e:
+                    logfire.warning(f"Failed to delete temporary file {request.payload}: {e}")
+
+        title_match = re.search(r'<title>(.*?)</title>', stdout, re.DOTALL)
+        if title_match:
+            title = title_match.group(1).strip()
+        else:
+            title = "👋"
+            logfire.warning("No title found in stdout, using default title")
+
+        abstract_match = re.search(r'<abstract>(.*?)</abstract>', stdout, re.DOTALL)
+        if abstract_match:
+            abstract = abstract_match.group(1).strip()
+        else:
+            abstract = ""
+            logfire.warning("No abstract found in stdout, using default abstract")
+
         files = [f for f in Path(tmpdir).glob('*') if f.is_file()]
-        await send_email(user_id, "Structured Documents from Platogram", "Here you are 💜", files)    
+
+        subject = f"[Platogram] {title}"
+        body = f"""Hi there!
+
+Platogram transformed spoken words into documents you can read and enjoy, or attach to ChatGPT/Claude/etc and prompt!
+
+You'll find a PDF and a Word file attached. The Word file includes the original transcript with timestamp references. I hope this helps!
+
+{abstract}
+
+Please reply to this e-mail if any suggestions, feedback, or questions.
+
+---
+Support Platogram by donating here: https://buy.stripe.com/eVa29p3PK5OXbq84gl
+Suggested donation: $2 per hour of content converted."""
+
+        await send_email(user_id, subject, body, files)    
 
 
 def _send_email_sync(user_id: str, subj: str, body: str, files: list[Path]):
