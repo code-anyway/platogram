@@ -375,9 +375,40 @@
           <button onclick="reset()" class="cta">Reset</button>
         </div>
 
-        <section>
-          <div class="features">
-            <div class="feature">
+        <section class="features-section">
+          <style>
+            .features-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 20px;
+              justify-content: start;
+              align-items: stretch;
+            }
+            .feature-card {
+              background-color: #f5f5f5;
+              border-radius: 8px;
+              padding: 20px;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+              text-align: left;
+            }
+            .feature-card h3 {
+              margin-top: 0;
+              font-size: 1.2em;
+              color: var(--dark-blue);
+              text-align: left;
+            }
+            .feature-card p {
+              font-size: 0.9em;
+              color: #555;
+            }
+            @media (max-width: 768px) {
+              .features-grid {
+                grid-template-columns: 1fr;
+              }
+            }
+          </style>
+          <div class="features-grid">
+            <div class="feature-card">
               <h3>Sparks Joy</h3>
               <p>
                 Platogram doesn't just transcribe - it transforms speech into
@@ -385,14 +416,14 @@
                 retrieval.
               </p>
             </div>
-            <div class="feature">
+            <div class="feature-card">
               <h3>Privacy First</h3>
               <p>
                 Your data stays yours. We process without storing, ensuring your
                 sensitive information remains confidential.
               </p>
             </div>
-            <div class="feature">
+            <div class="feature-card">
               <h3>Just Works</h3>
               <p>
                 Drop a link or a file with audio or transcript and we will
@@ -475,17 +506,50 @@
           </div>
         </section>
 
-        <section>
+        <section class="use-cases-section">
           <h2>Use Cases</h2>
-          <div class="use-cases">
-            <div class="use-case">
+          <style>
+            .use-cases-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 20px;
+              justify-content: center;
+            }
+            .use-case-card {
+              background-color: #f5f5f5;
+              border-radius: 8px;
+              padding: 20px;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+              text-align: left;
+              display: flex;
+              flex-direction: column;
+            }
+            .use-case-card h3 {
+              margin-top: 0;
+              font-size: 1.2em;
+              color: var(--dark-blue);
+              text-align: left;
+            }
+            .use-case-card p {
+              font-size: 0.9em;
+              color: #555;
+              flex-grow: 1;
+            }
+            @media (max-width: 768px) {
+              .use-cases-grid {
+                grid-template-columns: 1fr;
+              }
+            }
+          </style>
+          <div class="use-cases-grid">
+            <div class="use-case-card">
               <h3>Learning</h3>
               <p>
                 Turn podcasts, lectures, and interviews into readable, searchable,
                 shareable documents.
               </p>
             </div>
-            <div class="use-case">
+            <div class="use-case-card">
               <h3>Drafting</h3>
               <p>
                 Convert raw ideas and discussions into polished drafts for legal
@@ -493,15 +557,15 @@
                 the writing process.
               </p>
             </div>
-            <div class="use-case">
+            <div class="use-case-card">
               <h3>Professional</h3>
               <p>
                 Capture key insights from business meetings, coaching sessions,
                 and client calls, ensuring no valuable information is lost.
               </p>
             </div>
+          </div>
         </section>
-        
         <section>
           <h2>Pricing: Support Our Mission</h2>
           <p>
