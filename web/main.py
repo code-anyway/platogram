@@ -25,15 +25,25 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Request,
     UploadFile,
 )
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
+
 
 logfire.configure()
 app = FastAPI()
 
+class RedirectMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.url.hostname == "platogram.ai":
+            return RedirectResponse(url=str(request.url).replace("platogram.ai", "web.platogram.ai"), status_code=301)
+        return await call_next(request)
+
+app.add_middleware(RedirectMiddleware)
 
 AUTH0_DOMAIN = "dev-df8axtz2fh7qc2n2.us.auth0.com"
 API_AUDIENCE = "https://web.platogram.ai"

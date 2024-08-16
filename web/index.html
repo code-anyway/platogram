@@ -595,7 +595,11 @@
             rel="noopener noreferrer"
             >Code Anyway, Inc</a
           >
-          in 2023-2024
+          in 2023-2024.
+        <p>
+          <a href="https://github.com/code-anyway/platogram" target="_blank"
+          >View Source Code on GitHub</a>
+        </p>
         </p>
       </footer>
     </div>
@@ -652,7 +656,7 @@
           case "idle":
             inputSection.classList.remove("hidden");
             break;
-          case "error":
+          case "failed":
             errorSection.classList.remove("hidden");
             errorSection.querySelector("p").textContent =
               errorMessage || "An error occurred. Please try again.";
