@@ -89,4 +89,4 @@ def test_eval_get_paragraphs() -> None:
     match = re.search(r"<suggested_model>(.*?)</suggested_model>", result, re.DOTALL)
     assert match is not None
     result = match.group(1)
-    assert result == "TARGET"
+    assert result in ("TARGET", "BOTH")

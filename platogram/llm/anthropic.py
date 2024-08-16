@@ -66,7 +66,16 @@ class Model:
                     model=self.model,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    messages=[{"role": m.role, "content": m.content} for m in messages],
+                    extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
+                    messages=[
+                        {"role": m.role, "content": m.content}
+                        if not m.cache
+                        else {
+                            "role": m.role,
+                            "content": [{"type": "text", "text": m.content, "cache_control": {"type": "ephemeral"}}],
+                        }
+                        for m in messages
+                    ],
                     **kwargs,
                 )
 
@@ -125,24 +134,24 @@ Se te dará un <text> que contiene párrafos encerrados en etiquetas <p></p> y t
 Utiliza un lenguaje sencillo. Usa solo las palabras de <text>.
 Siempre llama al tool render_content_info y pasa la información sobre el contenido.
 </task>
-""".strip()
+""".strip(),
         }
 
         title = {
             "en": "Come up with the title which speaks to the essence of <text>. Use simple language. Use only the words from <text>.",
-            "es": "Crea un título que refleje la esencia de <text>. Utiliza un lenguaje sencillo. Usa solo las palabras de <text>."
+            "es": "Crea un título que refleje la esencia de <text>. Utiliza un lenguaje sencillo. Usa solo las palabras de <text>.",
         }
 
         summary = {
             "en": "Distill the key insights and express them as a comprehensive abstract summary. Use simple language. Use only words from <text>. Make sure to cover all paragraphs <p>...</p>.",
-            "es": "Destila las ideas principales y exprésalas como un resumen abstracto completo. Utiliza un lenguaje sencillo. Usa solo las palabras de <text>. Asegúrate de cubrir todos los párrafos <p>...</p>."
+            "es": "Destila las ideas principales y exprésalas como un resumen abstracto completo. Utiliza un lenguaje sencillo. Usa solo las palabras de <text>. Asegúrate de cubrir todos los párrafos <p>...</p>.",
         }
 
         properties = {
             "title": title[lang],
             "summary": summary[lang],
         }
-        
+
         description = {
             "en": "Renders useful information about <text>.",
             "es": "Genera información útil sobre <text>.",
@@ -211,7 +220,7 @@ Sigue estos pasos para transformar los <passages> en un diccionario de capítulo
 3. Llama a <chapter_tool> y pasa la lista de objetos <chapter>.
 </task>""".strip(),
         }
-        
+
         title = {
             "en": "Title of the chapter",
             "es": "Título del capítulo",
@@ -323,6 +332,10 @@ Siga estos pasos para reescribir el <transcript> y mantener cada <marker>:
             example_messages.append(
                 Assistant(content=f"<paragraphs>{response}</paragraphs>")
             )
+
+        # This will effectively cache the entire prefix with examples.
+        # https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#can-i-use-prompt-caching-at-the-same-time-as-other-betas
+        example_messages[-1].cache = True
 
         paragraphs = self.prompt_model(
             max_tokens=max_tokens,

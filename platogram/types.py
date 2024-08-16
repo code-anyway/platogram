@@ -6,12 +6,12 @@ from pydantic import BaseModel
 class User(BaseModel):
     role: Literal["user"] = "user"
     content: str
-
+    cache: bool = False
 
 class Assistant(BaseModel):
     role: Literal["assistant"] = "assistant"
     content: str
-
+    cache: bool = False
 
 class SpeechEvent(BaseModel):
     time_ms: int
