@@ -1,8 +1,7 @@
 # Platogrm specific
 .env
 .platogram-cache
-id
-content
+.id
 ngrok.yml
 
 # Byte-compiled / optimized / DLL files
