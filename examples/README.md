@@ -1,50 +1,40 @@
-# Audio to Paper Conversion Script
+# Audio to Paper Converter
 
-This script converts audio content into a structured paper format using Platogram.
+This Bash script converts audio content or web pages into structured academic papers in PDF format.
+
+## Features
+
+- Supports English and Spanish languages
+- Generates papers with and without references
+- Can process audio files (using AssemblyAI) or web pages
+- Generates title, abstract, contributors, introduction, discussion, and conclusion sections
+- Outputs PDFs using Pandoc and LaTeX
 
 ## Prerequisites
 
 - Bash environment
-- [Platogram](https://github.com/code-anyway/platogram) installed
-- ANTHROPIC_API_KEY (required)
-- ASSEMBLYAI_API_KEY (optional, for audio transcription)
+- Pandoc and XeLaTeX installed
+- `plato` command-line tool (assumed to be a custom tool for content processing)
+- ANTHROPIC_API_KEY set in environment variables
+- (Optional) ASSEMBLYAI_API_KEY for audio transcription
 
 ## Usage
-
+   
 ```bash
-./audio_to_paper.sh <URL> [--images]
+./audio_to_paper.sh <URL> [--lang <language>] [--verbose] [--images]
 ```
 
-- `<URL>`: The URL of the audio content
-- `--images` (optional): Include images
-
-## Features
-
-1. Transcribes audio to text (if `ASSEMBLYAI_API_KEY` is set) or uses subtitles, srt, vtt.
-2. Generates paper components:
-   - Title
-   - Abstract
-   - Contributors
-   - Chapters
-   - Introduction
-   - Discussion with chapters
-   - Conclusion
-   - References
-3. Outputs the paper in multiple formats:
-   - Markdown (.md)
-   - Microsoft Word (.docx)
-   - PDF (.pdf)
+- `<URL>`: The URL of the audio file or web page to process
+- `--lang`: Specify language (en or es, default: en)
+- `--verbose`: Enable verbose output
+- `--images`: Include image processing (if supported by plato)
 
 ## Output
 
-The script generates three files with the paper's title as the filename (special characters replaced with underscores):
+The script generates two PDF files:
+1. `<title>-no-refs.pdf`: Paper without references
+2. `<title>-refs.pdf`: Paper with references
 
-1. `<title>.md`
-2. `<title>.docx`
-3. `<title>.pdf`
+## Note
 
-## Notes
-
-- Ensure ANTHROPIC_API_KEY is set in your environment
-- For audio transcription, set ASSEMBLYAI_API_KEY in your environment
-- Without ASSEMBLYAI_API_KEY, the script will attempt to retrieve text from the URL (e.g., subtitles)
+Ensure all required API keys are set and dependencies are installed before running the script.
