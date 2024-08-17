@@ -1,7 +1,7 @@
 import asyncio
+import base64
 import os
 import re
-import smtplib
 import tempfile
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -30,17 +30,32 @@ from fastapi import (
 )
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordBearer
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
+
+import platogram as plato
+
+SCOPES = [
+    "https://mail.google.com/",
+]
+
 
 logfire.configure()
 app = FastAPI()
 
+
 class RedirectMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if request.url.hostname == "platogram.ai":
-            return RedirectResponse(url=str(request.url).replace("platogram.ai", "web.platogram.ai"), status_code=301)
+            return RedirectResponse(
+                url=str(request.url).replace("platogram.ai", "web.platogram.ai"),
+                status_code=301,
+            )
         return await call_next(request)
+
 
 app.add_middleware(RedirectMiddleware)
 
@@ -149,7 +164,9 @@ async def convert(
         raise HTTPException(status_code=400, detail="Conversion already in progress")
 
     if payload is None and file is None:
-        raise HTTPException(status_code=400, detail="Either payload or file must be provided")
+        raise HTTPException(
+            status_code=400, detail="Either payload or file must be provided"
+        )
 
     if payload is not None:
         request = ConversionRequest(payload=payload, lang=lang)
@@ -158,7 +175,7 @@ async def convert(
         tmpdir = Path(tempfile.gettempdir()) / "platogram_uploads"
         tmpdir.mkdir(parents=True, exist_ok=True)
         file_ext = file.filename.split(".")[-1]
-        temp_file = Path(tmpdir) / f"{uuid4()}.{file_ext}" 
+        temp_file = Path(tmpdir) / f"{uuid4()}.{file_ext}"
         file_content = await file.read()
         with open(temp_file, "wb") as fd:
             fd.write(file_content)
@@ -197,10 +214,12 @@ async def reset(user_id: str = Depends(verify_token_and_get_user_id)):
     return {"message": "Session reset"}
 
 
-async def audio_to_paper(url: str, lang: Language, output_dir: Path, user_id: str) -> tuple[str, str]:
+async def audio_to_paper(
+    url: str, lang: Language, output_dir: Path, user_id: str
+) -> tuple[str, str]:
     # Get absolute path of current working directory
     script_path = Path.cwd() / "examples" / "audio_to_paper.sh"
-    command = f"cd {output_dir} && {script_path} \"{url}\" --lang {lang} --verbose"
+    command = f'cd {output_dir} && {script_path} "{url}" --lang {lang} --verbose'
 
     if user_id in processes:
         raise RuntimeError("Conversion already in progress.")
@@ -209,7 +228,7 @@ async def audio_to_paper(url: str, lang: Language, output_dir: Path, user_id: st
         command,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
-        shell=True
+        shell=True,
     )
     processes[user_id] = process
 
@@ -234,57 +253,80 @@ stderr:
 async def send_email(user_id: str, subj: str, body: str, files: list[Path]):
     loop = asyncio.get_running_loop()
     with ProcessPoolExecutor() as pool:
-        await loop.run_in_executor(
-            pool, _send_email_sync, user_id, subj, body, files
-        )
+        await loop.run_in_executor(pool, _send_email_sync, user_id, subj, body, files)
 
 
-async def convert_and_send_with_error_handling(request: ConversionRequest, user_id: str):
+async def convert_and_send_with_error_handling(
+    request: ConversionRequest, user_id: str
+):
     try:
         await convert_and_send(request, user_id)
         tasks[user_id].status = "done"
     except Exception as e:
         logfire.exception(f"Error in background task for user {user_id}: {str(e)}")
 
-        if user_id in tasks:
-            error = str(e)
-            if len(error) > 256:
-                error = "🤯🤯🤯"
-            tasks[user_id].error = error
-            tasks[user_id].status = "failed"
+        error = str(e)
+        # Truncate and simplify error message for user-friendly display
+        model = plato.llm.get_model("anthropic/claude-3-5-sonnet", key=os.getenv("ANTHROPIC_API_KEY"))
+        error = model.prompt_model(messages=[
+            plato.types.User(
+                content=f"""
+                Given the following error message, provide a concise, user-friendly explanation 
+                that focuses on the key issue and any actionable steps. Avoid technical jargon 
+                and keep the message under 256 characters:
+
+                Error: {error}
+                """
+            )
+        ])
+
+        error = error.strip()  # Remove any leading/trailing whitespace
+        tasks[user_id].error = error
+        tasks[user_id].status = "failed"
 
 
 async def convert_and_send(request: ConversionRequest, user_id: str):
     with tempfile.TemporaryDirectory() as tmpdir:
-        if not (request.payload.startswith("http") or request.payload.startswith("file:///tmp/platogram_uploads")):
+        if not (
+            request.payload.startswith("http")
+            or request.payload.startswith("file:///tmp/platogram_uploads")
+        ):
             raise HTTPException(status_code=400, detail="Please provide a valid URL.")
         else:
             url = request.payload
 
         try:
-            stdout, stderr = await audio_to_paper(url, request.lang, Path(tmpdir), user_id)
+            stdout, stderr = await audio_to_paper(
+                url, request.lang, Path(tmpdir), user_id
+            )
         finally:
             if request.payload.startswith("file:///tmp/platogram_uploads"):
                 try:
-                    os.remove(request.payload.replace("file:///tmp/platogram_uploads", "/tmp/platogram_uploads"))
+                    os.remove(
+                        request.payload.replace(
+                            "file:///tmp/platogram_uploads", "/tmp/platogram_uploads"
+                        )
+                    )
                 except OSError as e:
-                    logfire.warning(f"Failed to delete temporary file {request.payload}: {e}")
+                    logfire.warning(
+                        f"Failed to delete temporary file {request.payload}: {e}"
+                    )
 
-        title_match = re.search(r'<title>(.*?)</title>', stdout, re.DOTALL)
+        title_match = re.search(r"<title>(.*?)</title>", stdout, re.DOTALL)
         if title_match:
             title = title_match.group(1).strip()
         else:
             title = "👋"
             logfire.warning("No title found in stdout, using default title")
 
-        abstract_match = re.search(r'<abstract>(.*?)</abstract>', stdout, re.DOTALL)
+        abstract_match = re.search(r"<abstract>(.*?)</abstract>", stdout, re.DOTALL)
         if abstract_match:
             abstract = abstract_match.group(1).strip()
         else:
             abstract = ""
             logfire.warning("No abstract found in stdout, using default abstract")
 
-        files = [f for f in Path(tmpdir).glob('*') if f.is_file()]
+        files = [f for f in Path(tmpdir).glob("*") if f.is_file()]
 
         subject = f"[Platogram] {title}"
         body = f"""Hi there!
@@ -301,40 +343,62 @@ Please reply to this e-mail if any suggestions, feedback, or questions.
 Support Platogram by donating here: https://buy.stripe.com/eVa29p3PK5OXbq84gl
 Suggested donation: $2 per hour of content converted."""
 
-        await send_email(user_id, subject, body, files)    
+        await send_email(user_id, subject, body, files)
 
 
 def _send_email_sync(user_id: str, subj: str, body: str, files: list[Path]):
-    # Email configuration
-    smtp_user = os.getenv("PLATOGRAM_SMTP_USER")
-    smtp_server = os.getenv("PLATOGRAM_SMTP_SERVER")
-    smtp_port = 587
-    sender_password = os.getenv("PLATOGRAM_SMTP_PASSWORD")
-    
-    # Create message
+    creds = get_gmail_service()
+
+    service = build("gmail", "v1", credentials=creds)
+
     msg = MIMEMultipart()
-    msg['From'] = os.getenv("PLATOGRAM_SMTP_FROM")
-    msg['To'] = user_id
-    msg['Subject'] = subj
-    
-    msg.attach(MIMEText(body, 'plain'))
-    
+    msg["From"] = os.getenv("PLATOGRAM_EMAIL_FROM")
+    msg["To"] = user_id
+    msg["Subject"] = subj
+
+    msg.attach(MIMEText(body, "plain"))
+
     # Attach files if provided
     for file in files:
         with open(file, "rb") as file:
             file_name = file.name.split("/")[-1]
             part = MIMEApplication(file.read(), Name=file_name)
-        part['Content-Disposition'] = f'attachment; filename="{file_name}"'
+        part["Content-Disposition"] = f'attachment; filename="{file_name}"'
         msg.attach(part)
-    
-    with smtplib.SMTP(smtp_server, smtp_port) as server:
-        server.starttls()
-        server.login(smtp_user, sender_password)
-        server.send_message(msg)
+
+    raw_message = base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")
+    message_body = {"raw": raw_message}
+
+    sent_message = (
+        service.users().messages().send(userId="me", body=message_body).execute()
+    )
+
+    delete_with_retry(service, sent_message["id"])
+
+
+def delete_with_retry(service, message_id, max_retries=5, initial_delay=1):
+    for attempt in range(max_retries):
+        try:
+            service.users().messages().delete(userId="me", id=message_id).execute()
+            return
+        except HttpError as error:
+            if error.resp.status in [500, 503]:  # Internal Server Error or Service Unavailable
+                delay = initial_delay * (2 ** attempt)
+                time.sleep(delay)
+            else:
+                raise error
+
+
+def get_gmail_service():
+    credentials = service_account.Credentials.from_service_account_file(
+        ".id/google-service-account.json", scopes=SCOPES)
+    user_email = os.getenv("PLATOGRAM_USER_EMAIL")
+    delegated_credentials = credentials.with_subject(user_email)
+
+    return delegated_credentials
 
 
 if __name__ == "__main__":
     import uvicorn
-
 
     uvicorn.run(app, host="0.0.0.0", port=8000)

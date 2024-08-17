@@ -3,7 +3,12 @@ from pathlib import Path
 
 import pytest
 
-from web.main import ConversionRequest, audio_to_paper, convert_and_send, send_email
+from web.main import (
+    ConversionRequest,
+    audio_to_paper,
+    convert_and_send_with_error_handling,
+    send_email,
+)
 
 
 @pytest.mark.asyncio
@@ -40,4 +45,4 @@ async def test_send_email():
 async def test_convert_and_send_http():
     request = ConversionRequest(payload="https://www.youtube.com/shorts/nXIHYB0Gp70", lang="en")
     user_id = "artyom.astafurov@gmail.com"
-    await convert_and_send(request, user_id)
+    await convert_and_send_with_error_handling(request, user_id)
