@@ -24,14 +24,14 @@ def format_time(ms):
 
 
 def render_reference(url: str, transcript: list[plato.SpeechEvent], i: int) -> str:
-    link = f" [[{i+1}]]({url}#t={transcript[i].time_ms // 1000})"
+    link = f" [[{i+1}]](#ts-{i + 1})"
     return link
 
 
 def render_transcript(first, last, transcript, url):
     return "\n".join(
         [
-            f"{i-first+1}. [{format_time(event.time_ms)}]({url}#t={event.time_ms // 1000}): {event.text}"
+            f"\n##### {{#ts-{i + 1}}}\n{i-first+1}. [{format_time(event.time_ms)}]({url}#t={event.time_ms // 1000}): {event.text}"
             for i, event in enumerate(transcript)
             if first <= i <= last
         ]
