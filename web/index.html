@@ -170,7 +170,7 @@
       color: var(--dark-red);
     }
     .hidden {
-      display: none;
+      display: none !important;
     }
     footer {
       margin-top: 40px;
@@ -232,8 +232,52 @@
   opacity: 0;
   cursor: pointer;
 }
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    text-align: center;
+  }
+
+  .lang-btn {
+    margin: 5px;
+    padding: 10px 20px;
+    background-color: var(--dark-blue);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .lang-btn:hover {
+    background-color: var(--medium-blue);
+  }
+
   </style>
   <body>
+    <div id="language-modal" class="modal hidden">
+      <div class="modal-content">
+        <h3>Select Language</h3>
+        <button id="en-btn" class="lang-btn">English</button>
+        <button id="es-btn" class="lang-btn">Spanish</button>
+        <button id="cancel-btn" class="lang-btn">Cancel</button>
+      </div>
+    </div>
+
     <div class="container">
       <header>
         <a href="#" class="cta" onclick="login()" id="login-button">Log In</a>
@@ -674,6 +718,8 @@
           .getElementById("logout-button")
           .classList.toggle("hidden", !isAuthenticated);
 
+        document.getElementById('language-modal').classList.add('hidden');
+
         if (isAuthenticated) {
           const user = await auth0Client.getUser();
           const token = await auth0Client.getTokenSilently({
@@ -722,55 +768,23 @@
       async function onConvertClick() {
         const inputData = getInputData();
         if (await auth0Client.isAuthenticated()) {
-          // Create and show the language selection modal
-          const modal = document.createElement('div');
-          modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-          `;
-
-          const modalContent = document.createElement('div');
-          modalContent.style.cssText = `
-            background-color: white;
-            padding: 20px;
-            border-radius: 5px;
-            text-align: center;
-          `;
-
-          modalContent.innerHTML = `
-            <h3>Select Language</h3>
-            <button id="en-btn">English</button>
-            <button id="es-btn">Spanish</button>
-            <button id="cancel-btn">Cancel</button>
-          `;
-
-          modal.appendChild(modalContent);
-          document.body.appendChild(modal);
-
-          // Handle language selection
-          const handleLanguageSelection = async (lang) => {
-            document.body.removeChild(modal);
-            await postToConvert(inputData, lang);
-          };
-
-          document.getElementById('en-btn').onclick = () => handleLanguageSelection('en');
-          document.getElementById('es-btn').onclick = () => handleLanguageSelection('es');
-          document.getElementById('cancel-btn').onclick = () => document.body.removeChild(modal);
-          // await postToConvert(inputData);
+          document.getElementById('language-modal').classList.remove('hidden');
         } else {
           login();
         }
       }
 
-      // Get input data (URL or File)
+      // Handle language selection
+      document.getElementById('en-btn').onclick = () => handleLanguageSelection('en');
+      document.getElementById('es-btn').onclick = () => handleLanguageSelection('es');
+      document.getElementById('cancel-btn').onclick = () => document.getElementById('language-modal').classList.add('hidden');
+
+      async function handleLanguageSelection(lang) {
+        document.getElementById('language-modal').classList.add('hidden');
+        const inputData = getInputData();
+        await postToConvert(inputData, lang);
+      }
+
       function getInputData() {
         const urlInput = document.getElementById("url-input").value;
         const fileInput = document.getElementById("file-upload").files[0];
