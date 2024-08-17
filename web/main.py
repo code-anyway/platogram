@@ -33,7 +33,6 @@ from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 
-
 logfire.configure()
 app = FastAPI()
 
@@ -292,7 +291,7 @@ async def convert_and_send(request: ConversionRequest, user_id: str):
 
 Platogram transformed spoken words into documents you can read and enjoy, or attach to ChatGPT/Claude/etc and prompt!
 
-You'll find a PDF and a Word file attached. The Word file includes the original transcript with timestamp references. I hope this helps!
+You'll find two PDF documents attached: full version, with original transcript and references, and a simplified version, without the transcript and references. I hope this helps!
 
 {abstract}
 
