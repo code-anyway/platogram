@@ -11,7 +11,7 @@ plato = "platogram.cli:main"
 
 [tool.poetry.dependencies]
 python = ">=3.10"
-yt-dlp = ">=2024.03.10"
+yt-dlp = {extras = ["curl-cffi", "default"], version = "^2024.8.6"}
 anthropic = ">=0.21.3"
 requests = "^2.31.0"
 assemblyai = "^0.26.0"
@@ -27,6 +27,7 @@ logfire = "^0.50.1"
 google-auth = "^2.33.0"
 google-auth-oauthlib = "^1.2.1"
 google-api-python-client = "^2.141.0"
+stripe = "^10.8.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
