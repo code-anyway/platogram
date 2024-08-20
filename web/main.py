@@ -16,6 +16,7 @@ from uuid import uuid4
 import httpx
 import jwt
 import logfire
+import stripe
 from cryptography.hazmat.primitives import serialization
 from cryptography.x509 import load_pem_x509_certificate
 from fastapi import (
@@ -73,6 +74,8 @@ Language = Literal["en", "es"]
 class ConversionRequest(BaseModel):
     payload: str
     lang: Language = "en"
+    price: Optional[float] = None
+    token: Optional[str] = None
 
 
 class Task(BaseModel):
@@ -156,6 +159,8 @@ async def convert(
     file: Optional[UploadFile] = File(None),
     payload: Optional[str] = Form(None),
     lang: Optional[Language] = Form(None),
+    price: Optional[float] = Form(None),
+    token: Optional[str] = Form(None),
 ):
     if not lang:
         lang = "en"
@@ -169,7 +174,7 @@ async def convert(
         )
 
     if payload is not None:
-        request = ConversionRequest(payload=payload, lang=lang)
+        request = ConversionRequest(payload=payload, lang=lang, price=price, token=token)
     else:
         # Create a named temporary directory if it doesn't exist
         tmpdir = Path(tempfile.gettempdir()) / "platogram_uploads"
@@ -183,7 +188,7 @@ async def convert(
 
         request = ConversionRequest(payload=f"file://{temp_file}", lang=lang)
 
-    tasks[user_id] = Task(start_time=datetime.now(), request=request)
+    tasks[user_id] = Task(start_time=datetime.now(), request=request, price=price, token=token)
     background_tasks.add_task(convert_and_send_with_error_handling, request, user_id)
     return {"message": "Conversion started"}
 
@@ -262,6 +267,17 @@ async def convert_and_send_with_error_handling(
     try:
         await convert_and_send(request, user_id)
         tasks[user_id].status = "done"
+        if request.token and request.token.lower() != 'null':
+            stripe.api_key = os.getenv("STRIPE_API_KEY")
+            charge = stripe.Charge.create(
+                amount=int(float(request.price) * 100),
+                currency='usd',
+                source=request.token,
+                description='Platogram audio to paper conversion'
+            )
+            logfire.info("Charge successful", price=request.price, user_id=user_id, charge_id=charge.id)
+        else:
+            logfire.info(f"No charge for user {user_id}", user_id=user_id)
     except Exception as e:
         logfire.exception(f"Error in background task for user {user_id}: {str(e)}")
 

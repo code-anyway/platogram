@@ -94,16 +94,6 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-    .donate {
-      background-color: var(--dark-red);
-    }
-    .donate:hover {
-      background-color: var(--medium-red);
-    }
-    .donate-button-container {
-      margin-top: 20px;
-      text-align: center;
-    }
     section {
       margin-bottom: 40px;
       padding: 20px;
@@ -232,51 +222,145 @@
   opacity: 0;
   cursor: pointer;
 }
-
 .modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
 
-  .modal-content {
-    background-color: white;
-    padding: 20px;
-    border-radius: 5px;
-    text-align: center;
-  }
+.modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
 
-  .lang-btn {
-    margin: 5px;
-    padding: 10px 20px;
-    background-color: var(--dark-blue);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
+.modal-content h3 {
+  margin-top: 0;
+  color: var(--dark-blue);
+  font-size: 1.5em;
+  margin-bottom: 20px;
+}
 
-  .lang-btn:hover {
-    background-color: var(--medium-blue);
-  }
+.language-selection,
+.price-input {
+  margin-bottom: 20px;
+}
 
-  </style>
-  <body>
-    <div id="language-modal" class="modal hidden">
-      <div class="modal-content">
-        <h3>Select Language</h3>
-        <button id="en-btn" class="lang-btn">English</button>
-        <button id="es-btn" class="lang-btn">Spanish</button>
-        <button id="cancel-btn" class="lang-btn">Cancel</button>
+.language-selection label,
+.price-input label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--dark-blue);
+  font-weight: 600;
+}
+
+.lang-dropdown,
+#price-input,
+#card-element {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid var(--dark-blue);
+  border-radius: 5px;
+  background-color: white;
+  color: var(--dark-blue);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  box-sizing: border-box;
+}
+
+.lang-dropdown:focus,
+#price-input:focus {
+  outline: none;
+  border-color: var(--medium-blue);
+  box-shadow: 0 0 0 2px rgba(0, 0, 205, 0.2);
+}
+
+.price-explanation {
+  font-size: 0.9em;
+  color: #666;
+  margin-top: 8px;
+}
+
+#card-element {
+  margin-bottom: 20px;
+}
+
+#card-errors {
+  color: #fa755a;
+  margin-bottom: 15px;
+  font-size: 0.9em;
+}
+
+.lang-btn {
+  padding: 12px 24px;
+  background-color: var(--dark-blue);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: background-color 0.3s;
+  margin: 0 10px;
+}
+
+.lang-btn:hover {
+  background-color: var(--medium-blue);
+}
+#submit-btn {
+  background-color: var(--dark-blue);
+}
+
+#submit-btn:hover {
+  background-color: var(--medium-blue);
+}
+
+#cancel-btn {
+  background-color: var(--dark-blue);
+}
+
+#cancel-btn:hover {
+  background-color: var(--medium-blue);
+}
+
+</style>
+<body>
+  <div id="language-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Select Language and Set Price</h3>
+      <div class="language-selection">
+        <select id="lang-select" class="lang-dropdown">
+          <option value="en">English</option>
+          <option value="es">Spanish</option>
+        </select>
       </div>
+      <div class="price-input">
+        <label for="price-input">Name Your Price (USD):</label>
+        <input type="number" id="price-input" value="2.00" step="0.01" min="0">
+        <p class="price-explanation">
+          Suggested: $2/hour. Enter $0 to try for free.
+        </p>
+      </div>
+      <div id="card-element">
+        <!-- Stripe Card Element will be inserted here -->
+      </div>
+      <div id="card-errors" role="alert"></div>
+      <button id="submit-btn" class="cta">Submit</button>
+      <button id="cancel-btn" class="cta">Cancel</button>
     </div>
+  </div>
+
 
     <div class="container">
       <header>
@@ -311,7 +395,6 @@
             </label>
           </div>
           <a href="#" class="cta" onclick="onConvertClick()">Convert</a>
-          <a href="#" class="cta donate" onclick="onDonateClick()">Donate</a>
         </div>
 
         <div id="done-section" class="cta-container hidden">
@@ -349,8 +432,7 @@
         </style>
         <div id="status-section" class="cta-container hidden">
           <p>
-            Working on it. You will receive an email from Artyom Astafurov with
-            PDF, Word, and Markdown documents once ready.
+            Working on it. You will receive an email from Artyom Astafurov once ready.
           </p>
           <p>
             Processing time is quick - about 5 mins for each hour of content. Hang tight!
@@ -359,7 +441,6 @@
             <div id="runner"></div>
             <p id="processing-stage"></p>
           </div>
-          <button class="cta donate" onclick="onDonateClick()">Donate</button>
           <!-- <button onclick="reset()">Cancel</button> -->
         </div>
         <style>
@@ -610,25 +691,52 @@
             </div>
           </div>
         </section>
-        <section>
-          <h2>Pricing: Support Our Mission</h2>
-          <p>
-            We believe in making knowledge accessible. That's why Platogram
-            operates on a donation-based model.
-          </p>
-          <div class="pricing">
-            <h3>Suggested Donation: $2 per hour of audio processed</h3>
-            <p>Your donation supports:</p>
-            <ul>
-              <li>AI inference costs</li>
-              <li>Making Platogram accessible for all users</li>
-              <li>Building fully-offline version of Platogram</li>
-            </ul>
-            <div class="donate-button-container">
-              <a href="#" class="cta donate" onclick="onDonateClick()">Donate Now</a>
-            </div>
+        <section class="pricing-section">
+          <h2>Flexible Pricing</h2>
+          <div class="price-highlight">
+            <span class="price">$2</span>
+            <span class="per-hour">per hour of audio processed</span>
           </div>
+          <p class="price-description">Suggested price, but you choose what to pay</p>
+          <ul class="pricing-benefits">
+            <li>Your contribution helps cover infrastructure costs</li>
+            <li>It also supports ongoing development</li>
+          </ul>
         </section>
+        <style>
+          .pricing-section {
+            background-color: var(--lighter-gray);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 40px;
+            text-align: center;
+          }
+          .price-highlight {
+            margin: 20px 0;
+          }
+          .price {
+            font-size: 3em;
+            font-weight: bold;
+            color: var(--dark-blue);
+          }
+          .per-hour {
+            font-size: 1.2em;
+            color: var(--medium-blue);
+          }
+          .price-description {
+            font-style: italic;
+            margin-bottom: 20px;
+            color: var(--dark-blue);
+          }
+          .pricing-benefits {
+            list-style-type: none;
+            padding: 0;
+          }
+          .pricing-benefits li {
+            margin: 10px 0;
+            color: var(--dark-blue);
+          }
+        </style>
       </main>
       <footer>
         <p>
@@ -647,6 +755,7 @@
         </p>
       </footer>
     </div>
+    <script src="https://js.stripe.com/v3/"></script>
     <script>
       let auth0Client = null;
 
@@ -676,6 +785,48 @@
           await updateUI();
         } catch (error) {
           console.error("Error initializing Auth0:", error);
+        }
+      }
+
+      let stripe, elements, card;
+
+      // Initialize Stripe
+      function initStripe() {
+        stripe = Stripe('pk_live_51M7o8vFSngJcZDqfHcvpYSTIJ2TKO4SOlRKYrhkCe2HL8oXnoiCcKDuNluTjBwJsjIqBHHIONNAjFn1mC1qQ1HON00kuu0frmg');
+        elements = stripe.elements();
+        card = elements.create('card');
+        card.mount('#card-element');
+      }
+
+      // Handle form submission
+      async function handleSubmit(event) {
+        // hide input section
+        document.getElementById('input-section').classList.add('hidden');
+        event.preventDefault();
+        
+        const price = document.getElementById('price-input').value;
+        const language = document.getElementById('lang-select').value;
+        
+        if (price > 0) {
+          try {
+            const { token, error } = await stripe.createToken(card);
+            if (error) {
+              const errorElement = document.getElementById('card-errors');
+              errorElement.textContent = error.message;
+            } else {
+              document.getElementById('language-modal').classList.add('hidden');
+              const inputData = getInputData();
+              await postToConvert(inputData, language, token.id, price);
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            const errorElement = document.getElementById('card-errors');
+            errorElement.textContent = 'An error occurred. Please try again.';
+          }
+        } else {
+          document.getElementById('language-modal').classList.add('hidden');
+          const inputData = getInputData();
+          await postToConvert(inputData, language, null, 0);
         }
       }
 
@@ -759,30 +910,42 @@
         }
       }
 
-      async function onDonateClick() {
-        // Open Stripe payment link in a new tab
-        window.open("https://buy.stripe.com/eVa29p3PK5OXbq84gl", "_blank");
+      function closeLanguageModal() {
+        document.getElementById('language-modal').classList.add('hidden');
+      }
+
+      // Event listener for the Escape key
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+          closeLanguageModal();
+        }
+      });
+
+      // Update event listeners
+      document.getElementById('cancel-btn').onclick = closeLanguageModal;
+      document.getElementById('submit-btn').onclick = handleSubmit;
+
+      function selectLanguage(lang) {
+        document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('selected'));
+        document.getElementById(`${lang}-btn`).classList.add('selected');
+      }
+
+      // Initialize Stripe when the modal is shown
+      function showLanguageModal() {
+        document.getElementById('language-modal').classList.remove('hidden');
+        if (!stripe) {
+          initStripe();
+        }
       }
 
       // Handle the 'Convert' button click
       async function onConvertClick() {
         const inputData = getInputData();
         if (await auth0Client.isAuthenticated()) {
-          document.getElementById('language-modal').classList.remove('hidden');
+          showLanguageModal();
         } else {
           login();
         }
-      }
-
-      // Handle language selection
-      document.getElementById('en-btn').onclick = () => handleLanguageSelection('en');
-      document.getElementById('es-btn').onclick = () => handleLanguageSelection('es');
-      document.getElementById('cancel-btn').onclick = () => document.getElementById('language-modal').classList.add('hidden');
-
-      async function handleLanguageSelection(lang) {
-        document.getElementById('language-modal').classList.add('hidden');
-        const inputData = getInputData();
-        await postToConvert(inputData, lang);
       }
 
       function getInputData() {
@@ -817,7 +980,7 @@
         }
       }
 
-      async function postToConvert(inputData, lang) {
+      async function postToConvert(inputData, lang, token, price) {
         let body;
         let headers = {
           Authorization: `Bearer ${await auth0Client.getTokenSilently({
@@ -827,6 +990,9 @@
 
         const formData = new FormData();
         formData.append('lang', lang);
+
+        formData.append('price', price);
+        formData.append('token', token);
 
         if (inputData instanceof File) {
           formData.append('file', inputData);
