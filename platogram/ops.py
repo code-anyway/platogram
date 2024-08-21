@@ -289,7 +289,7 @@ def get_chapter(chapters:dict[int, str], passage_marker: int) -> int | None:
     return None
 
 
-def get_chapters_with_passages(chapters: dict[int, str], passages: list[str]) -> dict[int, tuple[str, list[str]]]:
+def assemble_chapters(chapters: dict[int, str], passages: list[str]) -> dict[int, tuple[str, list[str]]]:
     def get_passage_marker(passage: str) -> int | None:
         markers = [int(m) for m in re.findall(r"【(\d+)】", passage)]
         return markers[0] if markers else None
@@ -309,41 +309,27 @@ def get_chapters_with_passages(chapters: dict[int, str], passages: list[str]) ->
     return functools.reduce(update_chapter, passages, {})
 
 
-def expand_and_add_figures(content: Content, llm: LanguageModel, image_samples_per_chapter: int = 16) -> Generator[tuple[str, dict[int, str]], None, None]:
-    """
-    Expand the chapter text and add figures to the chapter text based on the images in the content.
-    
-    Args:
-        content (Content): The content to expand and add figures to.
-        llm (LanguageModel): The language model to use.
-        image_samples_per_chapter (int, optional): The number of images to sample per chapter. Defaults to 16.
+def expand_and_add_figures(passages: list[str], images: dict[int, Path], llm: LanguageModel, image_samples_per_chapter: int = 16) -> tuple[str, dict[int, str]]:
+    chapter_text = "\n\n".join(passages)
 
-    Returns:
-        Generator[tuple[str, dict[int, str]], None, None]: The expanded chapter text combined with markers and captions for the figures.
-    """
+    if not images:
+        return chapter_text, {}
 
-    chapters = get_chapters_with_passages(content.chapters, content.passages)
-    
-    if not content.images:
-        for _, (_, passages) in chapters.items():
-            yield "\n\n".join(passages), {}
-        return
+    all_markers = [int(match.group(1)) for match in re.findall(r"【(\d+)】", chapter_text)]
+    image_markers = sorted(list(random.sample(all_markers, min(image_samples_per_chapter, len(all_markers)))))
+    expanded_chapter_text = llm.expand_chapter_text(
+        re.sub(r"【(\d+)】", lambda m: f"【{all_markers.index(int(m.group(1)))}】", chapter_text),
+        {
+            all_markers.index(marker): images[marker]
+            for marker in image_markers
+        }
+    )
 
-    for _, (_, passages) in chapters.items():
-        chapter_text = "\n\n".join(passages)
-        all_markers = list(set([int(m) for m in re.findall(r"【(\d+)】", chapter_text)]))
-        base_marker = sorted(all_markers)[0]
-        all_markers = [marker - base_marker for marker in all_markers]
-        sample_markers = sorted(random.sample(all_markers, min(image_samples_per_chapter, len(all_markers))))
-        expanded_chapter_text = llm.expand_chapter_text(re.sub(r"【(\d+)】", lambda m: f"【{int(m.group(1)) - base_marker}】", chapter_text), {marker: Path(".platogram-cache/httpswww.youtube.comwatchvzduSFxRajkE/resized_images") / Path(content.images[marker + base_marker]).name for marker in sample_markers})
+    figures = llm.get_figures(
+        re.sub(r"【(\d+)】", lambda m: f"【{image_markers.index(marker)}】" if (marker := all_markers[int(m.group(1))]) in image_markers else "", expanded_chapter_text),
+        [images[marker] for marker in image_markers])
 
-        marker_lookup = {marker: index for index, marker in enumerate(all_markers)}
-        expanded_chapter_text_with_images = re.sub(r"【(\d+)】", lambda m: f"【{marker_lookup[int(m.group(1))]}】" if int(m.group(1)) in marker_lookup else "", expanded_chapter_text)
-        figures = llm.get_figures(expanded_chapter_text_with_images, [Path(".platogram-cache/httpswww.youtube.comwatchvzduSFxRajkE/resized_images") / Path(content.images[marker + base_marker]).name for marker in marker_lookup.keys()])
-
-        markers = list(marker_lookup.keys())
-        
-        yield re.sub(r"【(\d+)】", lambda m: f"【{int(m.group(1)) + base_marker}】", expanded_chapter_text), {markers[index] + base_marker: title for index, title in figures.items()}
+    return expanded_chapter_text, {image_markers[marker]: title for marker, title in figures.items()}
 
 
 def index(

@@ -491,19 +491,29 @@ Sigue los pasos en <scratchpad> para construir <response> que esté bien estruct
 You are a very capable editor, speaker, educator, and author who is really good at researching sources and coming up with information dense responses to prompts backed by references from the context.
 </role>
 <task>
-You will be given a <chapter_text> that contains special markers in the format of "text【number】text【number】... text 【number】". All numbers are unique.
-You will be given images, where each image label corresponds to a marker in the <chapter_text>.
-Study the images and expand <chapter_text> by adding information retrieved from the images, such as text, code, bullets.
-Make sure to keep all the original markers in the <chapter_text>.
+You will be given a <chapter_text> that contains multiple paragraphs separated by two new lines.
+Each paragraph contains special markers in the format of "text【number】text【number】... text 【number】". All numbers are unique.
+You will be given images with labels. Each image label corresponds to a marker in the <chapter_text>.
+Study the images and expand <chapter_text> by adding information retrieved from the images, such as text, code, lists.
+Keep all the original markers in the <chapter_text>.
 </task>
+<output_format>
+Format the expanded <chapter_text> as Markdown.
+Output in the following format:
+<expanded_chapter_text>
+expanded <chapter_text> as Markdown
+</expanded_chapter_text>
+</output_format>
 """
         response = self.prompt_model(
             system=system_prompt,
-            messages=[User(content=f"<chapter_text>{chapter_text}</chapter_text>", images={f"【{i}】": p for i, p in images.items()})],
+            messages=[
+                User(content=f"<chapter_text>{chapter_text}</chapter_text>", images={f"【{i}】": p for i, p in images.items()}),
+                Assistant(content="<expanded_chapter_text>"),],
             temperature=temperature,
         )
-        
         assert isinstance(response, str), f"Expected LLM to return str, got {response}"
+        response = response.replace("</expanded_chapter_text>", "").strip()
         return response
     
     
@@ -512,12 +522,13 @@ Make sure to keep all the original markers in the <chapter_text>.
 You are a very capable editor, speaker, educator, and author with expertise in analyzing text and images to create meaningful connections.
 </role>
 <task>
-You will be given a <chapter_text> that contains special markers in the format of "text【number】text【number】... text 【number】". All numbers are unique.
-You will also be given a set of images.
+You will be given a <chapter_text> that contains multiple paragraphs separated by two new lines.
+Each paragraph contains special markers in the format of "text【number】text【number】... text 【number】". All numbers are unique.
+You will also be given a set of images with labels corresponding to markers in paragraphs.
 
 Your task is to:
 1. Analyze the <chapter_text> and the provided images.
-2. Identify zero or more images that are highly relevant to the content of the <chapter_text>.
+2. Identify zero or more unique images that are highly relevant to the content of the <chapter_text>.
 3. For each relevant image, create a brief but informative caption that relates it to the nearby text.
 4. Call the <add_figure> tool and pass all markers of relevant images and their captions.
 
