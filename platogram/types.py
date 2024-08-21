@@ -1,11 +1,12 @@
 from typing import Literal
-
+from pathlib import Path
 from pydantic import BaseModel
 
 
 class User(BaseModel):
     role: Literal["user"] = "user"
     content: str
+    images: dict[str, Path] | None = None
     cache: bool = False
 
 class Assistant(BaseModel):

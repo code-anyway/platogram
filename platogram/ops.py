@@ -2,9 +2,12 @@ import re
 from typing import Callable
 
 from tqdm import tqdm  # type: ignore
-
+from typing import Generator
 from platogram.llm import LanguageModel
 from platogram.types import Content, SpeechEvent
+from pathlib import Path
+import random
+import functools
 
 
 def remove_markers(text: str) -> str:
@@ -206,24 +209,162 @@ def get_paragraphs(
     return paragraphs
 
 
+def chunk_paragraphs(
+    paragraphs: list[str],
+    chunk_size: int,
+    token_count_fn: Callable[[str], int],
+) -> list[list[str]]:
+    chunks = [[]]
+    current_chunk_size = 0
+    for paragraph in paragraphs:
+        if current_chunk_size > chunk_size:
+            chunks.append([])
+            current_chunk_size = 0
+        current_chunk_size += token_count_fn(paragraph)
+        chunks[-1].append(paragraph)
+
+    if not chunks[-1]:
+        chunks.pop()
+
+    return chunks
+
+
+def get_chapters(
+    paragraphs: list[str],
+    llm: LanguageModel,
+    temperature: float,
+    chapter_size_words: int,
+    chunk_size_tokens: int,
+    lang: str | None = None,
+) -> dict[int, str]:
+    if not lang:
+        lang = "en"
+
+    tail: list[str] = []
+    chunks = chunk_paragraphs(paragraphs, chunk_size_tokens, llm.count_tokens)
+    chapters: dict[int, str] = {}
+    with tqdm(total=len(chunks), initial=0) as pbar:
+        pbar.update(0)
+
+        while chunks:
+            chunk = chunks.pop(0)
+            chunk = tail + chunk
+
+            base_marker = sorted(
+                [int(marker) for marker in re.findall(r"【(\d+)】", chunk[0])]
+            )[0]
+            
+            content = [re.sub(
+                        r"【(\d+)】",
+                        lambda match: f"【{int(match.group(1)) - base_marker}】",
+                        paragraph,
+                    ) for paragraph in chunk]
+
+            last_marker = 0
+            _chapters = llm.get_chapters(
+                content, context=chapters, chapter_size_words=chapter_size_words, temperature=temperature, lang=lang,
+            ).items()
+            for marker, title in _chapters:
+                chapters[marker + base_marker] = title
+                last_marker = marker + base_marker
+
+            if chunks:
+                chapters.pop(last_marker)
+                tail = [paragraph for paragraph in chunk if sorted(
+                [int(marker) for marker in re.findall(r"【(\d+)】", paragraph)]
+            )[0] >= last_marker]
+
+            pbar.update(1)
+
+    return chapters
+
+
+def get_chapter(chapters:dict[int, str], passage_marker: int) -> int | None:
+    chapter_markers = list(chapters.keys())
+    for start, end in zip(chapter_markers[:-1], chapter_markers[1:]):
+        if start <= passage_marker < end:
+            return start
+    if passage_marker >= chapter_markers[-1]:
+        return chapter_markers[-1]
+    return None
+
+
+def get_chapters_with_passages(chapters: dict[int, str], passages: list[str]) -> dict[int, tuple[str, list[str]]]:
+    def get_passage_marker(passage: str) -> int | None:
+        markers = [int(m) for m in re.findall(r"【(\d+)】", passage)]
+        return markers[0] if markers else None
+
+    def update_chapter(acc: dict[int, tuple[str, list[str]]], passage: str) -> dict[int, tuple[str, list[str]]]:
+        marker = get_passage_marker(passage)
+        chapter_marker = get_chapter(chapters, marker) if marker is not None else None
+        
+        if chapter_marker is not None and chapter_marker not in acc:
+            acc[chapter_marker] = (chapters[chapter_marker], [])
+        
+        if chapter_marker is not None:
+            acc[chapter_marker][1].append(passage.strip())
+        
+        return acc
+
+    return functools.reduce(update_chapter, passages, {})
+
+
+def expand_and_add_figures(content: Content, llm: LanguageModel, image_samples_per_chapter: int = 16) -> Generator[tuple[str, dict[int, str]], None, None]:
+    """
+    Expand the chapter text and add figures to the chapter text based on the images in the content.
+    
+    Args:
+        content (Content): The content to expand and add figures to.
+        llm (LanguageModel): The language model to use.
+        image_samples_per_chapter (int, optional): The number of images to sample per chapter. Defaults to 16.
+
+    Returns:
+        Generator[tuple[str, dict[int, str]], None, None]: The expanded chapter text combined with markers and captions for the figures.
+    """
+
+    chapters = get_chapters_with_passages(content.chapters, content.passages)
+    
+    if not content.images:
+        for _, (_, passages) in chapters.items():
+            yield "\n\n".join(passages), {}
+        return
+
+    for _, (_, passages) in chapters.items():
+        chapter_text = "\n\n".join(passages)
+        all_markers = list(set([int(m) for m in re.findall(r"【(\d+)】", chapter_text)]))
+        base_marker = sorted(all_markers)[0]
+        all_markers = [marker - base_marker for marker in all_markers]
+        sample_markers = sorted(random.sample(all_markers, min(image_samples_per_chapter, len(all_markers))))
+        expanded_chapter_text = llm.expand_chapter_text(re.sub(r"【(\d+)】", lambda m: f"【{int(m.group(1)) - base_marker}】", chapter_text), {marker: Path(".platogram-cache/httpswww.youtube.comwatchvzduSFxRajkE/resized_images") / Path(content.images[marker + base_marker]).name for marker in sample_markers})
+
+        marker_lookup = {marker: index for index, marker in enumerate(all_markers)}
+        expanded_chapter_text_with_images = re.sub(r"【(\d+)】", lambda m: f"【{marker_lookup[int(m.group(1))]}】" if int(m.group(1)) in marker_lookup else "", expanded_chapter_text)
+        figures = llm.get_figures(expanded_chapter_text_with_images, [Path(".platogram-cache/httpswww.youtube.comwatchvzduSFxRajkE/resized_images") / Path(content.images[marker + base_marker]).name for marker in marker_lookup.keys()])
+
+        markers = list(marker_lookup.keys())
+        
+        yield re.sub(r"【(\d+)】", lambda m: f"【{int(m.group(1)) + base_marker}】", expanded_chapter_text), {markers[index] + base_marker: title for index, title in figures.items()}
+
+
 def index(
     transcript: list[SpeechEvent],
     llm: LanguageModel,
     max_tokens: int = 4096,
     temperature: float = 0.5,
-    chunk_size: int = 2048,
+    chunk_size_tokens: int = 2048,
+    chapter_size_words: int = 1024,
     lang: str | None = None,
 ) -> Content:
     text = render({i: event.text for i, event in enumerate(transcript)})
-    paragraphs = get_paragraphs(text, llm, max_tokens, temperature, chunk_size, lang=lang)
+    paragraphs = get_paragraphs(text, llm, max_tokens, temperature, chunk_size_tokens, lang=lang)
 
     try:
-        title, summary = llm.get_meta(paragraphs, lang=lang)
+        title, summary = llm.get_meta(paragraphs, max_tokens=max_tokens, temperature=temperature, lang=lang)
     except Exception:
         title, summary = "Missing Title", "Missing Summary"
     
     try:
-        chapters = llm.get_chapters(paragraphs, lang=lang)
+        chapters = get_chapters(paragraphs, llm, chapter_size_words=chapter_size_words, chunk_size_tokens=chunk_size_tokens, temperature=temperature, lang=lang)
     except Exception:
         chapters = {0: "All Content"}
 

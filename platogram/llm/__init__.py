@@ -1,5 +1,6 @@
 from typing import Protocol, Literal, Generator, Sequence
 from platogram.types import Content, User, Assistant
+from pathlib import Path
 
 
 class LanguageModel(Protocol):
@@ -10,8 +11,12 @@ class LanguageModel(Protocol):
     ) -> tuple[str, str]: ...
 
     def get_chapters(
-        self, passages: list[str], max_tokens: int = 4096, temperature: float = 0.5, lang: str | None = None
+        self, passages: list[str], context: dict[int, str], chapter_size_words: int, temperature: float = 0.5, lang: str | None = None
     ) -> dict[int, str]: ...
+    
+    def expand_chapter_text(self, chapter_text: str, images: dict[int, Path]) -> str: ...
+
+    def get_figures(self, chapter_text: str, images: list[Path]) -> dict[int, str]: ...
 
     def get_paragraphs(
         self,
