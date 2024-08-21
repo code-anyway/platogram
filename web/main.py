@@ -385,11 +385,21 @@ def _send_email_sync(user_id: str, subj: str, body: str, files: list[Path]):
     raw_message = base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")
     message_body = {"raw": raw_message}
 
-    sent_message = (
-        service.users().messages().send(userId="me", body=message_body).execute()
-    )
+    sent_message = send_with_retry(service, message_body)
 
     delete_with_retry(service, sent_message["id"])
+
+
+def send_with_retry(service, message_body, max_retries=5, initial_delay=1):
+    for attempt in range(max_retries):
+        try:
+            return service.users().messages().send(userId="me", body=message_body).execute()
+        except HttpError as error:
+            if error.resp.status in [500, 503]:  # Internal Server Error or Service Unavailable
+                delay = initial_delay * (2 ** attempt)
+                time.sleep(delay)
+            else:
+                raise error
 
 
 def delete_with_retry(service, message_id, max_retries=5, initial_delay=1):
