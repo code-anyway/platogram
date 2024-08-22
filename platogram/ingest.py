@@ -164,7 +164,7 @@ def extract_images(
     image_paths = []
     try:
         # Convert timestamps to seconds and create the select filter
-        timestamps_s = [ts // 1000 for ts in timestamps_ms]
+        timestamps_s = sorted(list(set(ts // 1000 for ts in timestamps_ms)))
         select_filter = '+'.join([f"eq(t,{t})" for t in timestamps_s])
 
         # Construct the FFmpeg command
@@ -175,7 +175,6 @@ def extract_images(
             "-vsync", "0",
             "-q:v", "2",
             "-f", "image2",
-            "-frame_pts", "true",  # Use timestamps for filenames
             str(output_dir / "image_%d.png")
         ]
 
@@ -188,7 +187,7 @@ def extract_images(
         )
 
         # Get all image files in the output directory and sort them alphabetically
-        image_paths = [output_dir / f"image_{ts // 1000}.png" for ts in timestamps_ms]
+        image_paths = [output_dir / f"image_{timestamps_s.index(ts // 1000)}.png" for ts in timestamps_ms]
 
         if not image_paths:
             raise RuntimeError("No images were extracted from the video.")
