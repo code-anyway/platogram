@@ -1,15 +1,16 @@
-import platogram
-
 from pathlib import Path
+
+import platogram
 from platogram import ingest
 
 
 def test_extract_images(tmp_path):
     images = ingest.extract_images(
         "https://www.youtube.com/shorts/XsLK3tPy9SI",
-        timestamps_ms=[0],
+        timestamps_ms=[0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 9009],
         output_dir=Path(tmp_path),
     )
+    assert len(images) == 11
     assert images and all(image.exists() for image in images)
 
 

@@ -1,7 +1,8 @@
 import os
 import re
-from typing import Any, Generator, Literal, Sequence
 from pathlib import Path
+from typing import Any, Generator, Literal, Sequence
+
 import anthropic
 from anthropic import AnthropicError
 from tenacity import (
@@ -41,7 +42,10 @@ class Model:
     def count_tokens(self, text: str) -> int:
         return self.client.count_tokens(text)
     
-    def load_images(self, images: dict[str, Path]) -> list[dict]:
+    def load_images(self, images: dict[str, Path] | None = None) -> list[dict]:
+        if images is None:
+            return []
+
         loaded_images = []
         for image_text, image_path in images.items():
             with open(image_path, "rb") as image_file:
@@ -60,6 +64,7 @@ class Model:
                     "text": image_text
                 })
         return loaded_images
+
 
     def prompt_model(
         self,
@@ -88,11 +93,14 @@ class Model:
                     temperature=temperature,
                     extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
                     messages=[
-                        {"role": m.role, "content": [{"type": "text", "text": m.content}] + self.load_images(m.images)}
+                        {
+                            "role": m.role,
+                            "content": self.load_images(m.images) + [{"type": "text", "text": m.content}]
+                        }
                         if not m.cache
                         else {
                             "role": m.role,
-                            "content": [{"type": "text", "text": m.content, "cache_control": {"type": "ephemeral"}}] + self.load_images(m.images),
+                            "content": self.load_images(m.images) +[{"type": "text", "text": m.content, "cache_control": {"type": "ephemeral"}}],
                         }
                         for m in messages
                     ],
@@ -491,10 +499,11 @@ Sigue los pasos en <scratchpad> para construir <response> que esté bien estruct
 You are a very capable editor, speaker, educator, and author who is really good at researching sources and coming up with information dense responses to prompts backed by references from the context.
 </role>
 <task>
+You will be given images with labels. Each image label corresponds to a marker in the <chapter_text>.
 You will be given a <chapter_text> that contains multiple paragraphs separated by two new lines.
 Each paragraph contains special markers in the format of "text【number】text【number】... text 【number】". All numbers are unique.
-You will be given images with labels. Each image label corresponds to a marker in the <chapter_text>.
 Study the images and expand <chapter_text> by adding information retrieved from the images, such as text, code, lists.
+Stick to the style of the <chapter_text>.
 Keep all the original markers in the <chapter_text>.
 </task>
 <output_format>

@@ -13,6 +13,7 @@ class User(BaseModel):
 class Assistant(BaseModel):
     role: Literal["assistant"] = "assistant"
     content: str
+    images: dict[str, Path] | None = None
     cache: bool = False
 
 class SpeechEvent(BaseModel):

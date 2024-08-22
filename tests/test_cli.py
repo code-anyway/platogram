@@ -1,16 +1,17 @@
 import os
-from pathlib import Path
 import tempfile
+from pathlib import Path
+
+import platogram as plato
 import platogram.cli as cli
 from platogram.types import Content
-import platogram as plato
 
 
 def test_process_url():
     anthropic_api_key = os.environ["ANTHROPIC_API_KEY"]
     assemblyai_api_key = os.environ.get("ASSEMBLYAI_API_KEY")
 
-    url = "https://www.youtube.com/shorts/XsLK3tPy9SI"
+    url = "file:///home/astaff/Downloads/visualjj-demo.mov"
 
     with tempfile.TemporaryDirectory() as temp_dir:
         library = plato.library.get_semantic_local_chroma(Path(temp_dir))

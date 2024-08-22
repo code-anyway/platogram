@@ -1,10 +1,12 @@
-import concurrent.futures
 import functools
 import random
 import re
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Callable
 
+from PIL import Image
 from tqdm import tqdm  # type: ignore
 
 from platogram.llm import LanguageModel
@@ -335,6 +337,7 @@ def expand_and_add_figures(
     passages: list[str],
     images: dict[int, Path],
     llm: LanguageModel,
+    max_image_edge_length_px: int = 1024,
     num_image_samples: int = 16,
 ) -> tuple[str, dict[int, str]]:
     chapter_text = "\n\n".join(passages)
@@ -342,51 +345,72 @@ def expand_and_add_figures(
     if not images:
         return chapter_text, {}
 
-    all_markers = [
-        int(match.group(1)) for match in re.findall(r"【(\d+)】", chapter_text)
-    ]
-    image_markers = sorted(
-        list(random.sample(all_markers, min(num_image_samples, len(all_markers))))
-    )
-    expanded_chapter_text = llm.expand_chapter_text(
-        re.sub(
-            r"【(\d+)】",
-            lambda m: f"【{all_markers.index(int(m.group(1)))}】",
-            chapter_text,
-        ),
-        {all_markers.index(marker): images[marker] for marker in image_markers},
-    )
-    expanded_chapter_text = re.sub(
-        r"【(\d+)】",
-        lambda m: f"【{all_markers[int(m.group(1))]}】",
-        expanded_chapter_text,
-    )
+    with TemporaryDirectory() as tmpdir:
+        def resize_image(image_path: Path, output_dir: Path, max_edge_length: int) -> Path:
+            with Image.open(image_path) as img:
+                img.thumbnail((max_edge_length, max_edge_length), Image.LANCZOS)
+                output_path = output_dir / image_path.name
+                img.save(output_path, optimize=True)
+            return output_path
 
-    figures = llm.get_figures(
-        re.sub(
+        with ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(resize_image, img_path, Path(tmpdir), max_image_edge_length_px)
+                for img_path in images.values()
+            ]
+            resized_images = {
+                marker: future.result()
+                for marker, future in zip(images.keys(), futures)
+            }
+
+        images = resized_images
+
+        all_markers = [
+            int(match) for match in re.findall(r"【(\d+)】", chapter_text)
+        ]
+        image_markers = sorted(
+            list(random.sample(all_markers, min(num_image_samples, len(all_markers))))
+        )
+        expanded_chapter_text = llm.expand_chapter_text(
+            re.sub(
+                r"【(\d+)】",
+                lambda m: f"【{all_markers.index(int(m.group(1)))}】",
+                chapter_text,
+            ),
+            {all_markers.index(marker): images[marker] for marker in image_markers},
+        )
+        expanded_chapter_text = re.sub(
             r"【(\d+)】",
-            lambda m: f"【{image_markers.index(marker)}】"
-            if (marker := int(m.group(1))) in image_markers
-            else "",
+            lambda m: f"【{all_markers[int(m.group(1))]}】",
             expanded_chapter_text,
-        ),
-        [images[marker] for marker in image_markers],
-    )
+        )
 
-    return expanded_chapter_text, {
-        image_markers[marker]: title for marker, title in figures.items()
-    }
+        figures = llm.get_figures(
+            re.sub(
+                r"【(\d+)】",
+                lambda m: f"【{image_markers.index(marker)}】"
+                if (marker := int(m.group(1))) in image_markers
+                else "",
+                expanded_chapter_text,
+            ),
+            [images[marker] for marker in image_markers],
+        )
+
+        return expanded_chapter_text, {
+            image_markers[marker]: title for marker, title in figures.items()
+        }
 
 
 def index(
     transcript: list[SpeechEvent],
-    images: list[Path],
+    images: dict[int, Path],
     llm: LanguageModel,
     max_tokens: int = 4096,
     temperature: float = 0.5,
     chunk_size_tokens: int = 2048,
     chapter_size_words: int = 1024,
-    num_image_samples_per_chapter: int = 6,
+    num_image_samples_per_chapter: int = 16,
+    num_workers: int = 8,
     lang: str | None = None,
 ) -> Content:
     text = render({i: event.text for i, event in enumerate(transcript)})
@@ -407,18 +431,15 @@ def index(
     )
 
     if images:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            text_and_figures = list(
-                executor.map(
-                    lambda chapter: expand_and_add_figures(
-                        chapter[1][1],
-                        images,
-                        llm,
-                        num_image_samples=num_image_samples_per_chapter,
-                    ),
-                    assemble_chapters(chapters, paragraphs).items(),
-                )
+        text_and_figures = []
+        for chapter, content in assemble_chapters(chapters, paragraphs).items():
+            expanded_text, figures = expand_and_add_figures(
+                content[1],
+                images,
+                llm,
+                num_image_samples=num_image_samples_per_chapter,
             )
+            text_and_figures.append((expanded_text, figures))
 
         return Content(
             title=title,
@@ -428,7 +449,7 @@ def index(
             chapters=chapters,
             text=[text for text, _ in text_and_figures],
             figures={
-                marker: (caption, images[marker])
+                marker: (caption, str(images[marker]))
                 for _, figures in text_and_figures
                 for marker, caption in figures.items()
             },

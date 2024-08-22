@@ -1,7 +1,15 @@
-import platogram
+from pathlib import Path
+
 import pytest
-import json
-from platogram.ops import chunk_text, get_paragraphs, parse, get_chapters, expand_and_add_figures
+
+import platogram
+from platogram.ops import (
+    chunk_text,
+    expand_and_add_figures,
+    get_chapters,
+    get_paragraphs,
+    parse,
+)
 
 
 def test_get_paragraphs() -> None:
@@ -50,15 +58,28 @@ def test_get_chapters() -> None:
     )
 
     assert list(chapters.keys()) == [0, 3, 6, 9, 12, 15, 18, 21], f"chapters: {chapters}"
-    
+
 
 def test_expand_and_add_figures() -> None:
     llm = platogram.llm.get_model("anthropic/claude-3-5-sonnet")
-    with open(".platogram-cache/httpswww.youtube.comwatchvzduSFxRajkE.json", "r") as f:
-        content = platogram.Content(**json.load(f))
-        
-    res = list(expand_and_add_figures(content, llm))
-    assert len(res) == 8
+    passages = [
+        "This is the first paragraph of the first chapter.【0】This is the second paragraph of the first chapter.【1】",
+        "This is the third paragraph of the first chapter.【2】This is the fourth paragraph of the first chapter.【3】",
+        "This is the fifth paragraph of the first chapter. This is the sixth paragraph of the first chapter.【5】",
+    ]
+
+    images = {
+        0: Path("samples/images/0.png"),
+        1: Path("samples/images/1.png"),
+        2: Path("samples/images/2.png"),
+        3: Path("samples/images/3.png"),
+        4: Path("samples/images/4.png"),
+        5: Path("samples/images/5.png"),
+    }
+    text, figures = expand_and_add_figures(passages, images, llm, num_image_samples=4)
+
+    assert text
+    assert figures
 
 
 def test_chunk_empty_input_string():
