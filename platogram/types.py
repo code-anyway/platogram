@@ -1,5 +1,6 @@
-from typing import Literal
 from pathlib import Path
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -26,5 +27,7 @@ class Content(BaseModel):
     chapters: dict[int, str]
     passages: list[str]
     transcript: list[SpeechEvent]
+    text: list[str]
+    figures: dict[int, tuple[str, str]] | None = None
     images: list[str] | None = None
     origin: str | None = None
