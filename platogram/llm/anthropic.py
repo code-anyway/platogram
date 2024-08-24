@@ -496,33 +496,34 @@ Sigue los pasos en <scratchpad> para construir <response> que esté bien estruct
 
     def expand_chapter_text(self, chapter_text: str, images: dict[int, Path], temperature: float = 0.5) -> str:
         system_prompt = """<role>
-You are a very capable editor, speaker, educator, and author who is really good at researching sources and coming up with information dense responses to prompts backed by references from the context.
+You are a very capable editor, speaker, educator, and author who is really good at reviewing text and images to create meaningful connections.
 </role>
 <task>
 You will be given images with labels. Each image label corresponds to a marker in the <chapter_text>.
 You will be given a <chapter_text> that contains multiple paragraphs separated by two new lines.
 Each paragraph contains special markers in the format of "text【number】text【number】... text 【number】". All numbers are unique.
-Study the images and expand <chapter_text> by adding information retrieved from the images, such as text, code, lists.
-Stick to the style of the <chapter_text>.
+Study the images and <chapter_text>. Select the most relevant images.
+Stick to the style of <chapter_text> and paraphrase text around markers to include the information from the most relevant images.
 Keep all the original markers in the <chapter_text>.
+Avoid referring to the images directly in the <chapter_text>.
 </task>
 <output_format>
-Format the expanded <chapter_text> as Markdown.
+Use markdown for code and lists you transferred from the images.
 Output in the following format:
-<expanded_chapter_text>
-expanded <chapter_text> as Markdown
-</expanded_chapter_text>
+<improved_chapter_text>
+Improved <chapter_text>
+</improved_chapter_text>
 </output_format>
 """
         response = self.prompt_model(
             system=system_prompt,
             messages=[
                 User(content=f"<chapter_text>{chapter_text}</chapter_text>", images={f"【{i}】": p for i, p in images.items()}),
-                Assistant(content="<expanded_chapter_text>"),],
+                Assistant(content="<improved_chapter_text>"),],
             temperature=temperature,
         )
         assert isinstance(response, str), f"Expected LLM to return str, got {response}"
-        response = response.replace("</expanded_chapter_text>", "").strip()
+        response = response.replace("</improved_chapter_text>", "").strip()
         return response
     
     

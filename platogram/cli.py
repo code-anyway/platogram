@@ -251,9 +251,10 @@ def main():
                             passages += f"### {content.chapters[chapter_marker]}\n\n"
                             current_chapter = chapter_marker
                         passages += f"{passage.strip()}\n\n"
-                        for image_marker in set(passage_markers) & set(content.figures):
-                            figure_html = f"![{content.figures[image_marker][0]}]({content.figures[image_marker][1]}){{ width=80% }}\n\n"
-                            passages += figure_html
+                        if content.figures:
+                            for image_marker in set(passage_markers) & set(content.figures):
+                                figure_html = f"![{content.figures[image_marker][0]}]({content.figures[image_marker][1]}){{ width=80% }}\n\n"
+                                passages += figure_html
             else:
                 passages = content.text
 

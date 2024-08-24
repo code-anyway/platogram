@@ -461,7 +461,7 @@ def index(
             passages=paragraphs,
             transcript=transcript,
             chapters=chapters,
-            text=["\n\n".join(paragraphs) for paragraphs in assemble_chapters(chapters, paragraphs).values()],
+            text=["\n\n".join(paragraphs) for _, paragraphs in assemble_chapters(chapters, paragraphs).values()],
         )
 
 

@@ -187,7 +187,7 @@ def extract_images(
         )
 
         # Get all image files in the output directory and sort them alphabetically
-        image_paths = [output_dir / f"image_{timestamps_s.index(ts // 1000)}.png" for ts in timestamps_ms]
+        image_paths = [output_dir / f"image_{timestamps_s.index(ts // 1000) + 1}.png" for ts in timestamps_ms]
 
         if not image_paths:
             raise RuntimeError("No images were extracted from the video.")
