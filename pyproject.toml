@@ -28,6 +28,9 @@ google-auth = "^2.33.0"
 google-auth-oauthlib = "^1.2.1"
 google-api-python-client = "^2.141.0"
 stripe = "^10.8.0"
+pillow = "^10.4.0"
+chromadb = "^0.5.5"
+openai = "^1.42.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"

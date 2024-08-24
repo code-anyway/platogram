@@ -1,18 +1,17 @@
 import logging
 import mimetypes
+import subprocess
 from functools import lru_cache
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import requests  # type: ignore
 from yt_dlp import YoutubeDL  # type: ignore
-import subprocess
 
-from platogram.parsers import parse_subtitles, parse_waffly
 from platogram.asr import ASRModel
+from platogram.parsers import parse_subtitles, parse_waffly
 from platogram.types import SpeechEvent
 from platogram.utils import get_sha256_hash
-
 
 logger = logging.getLogger(__name__)
 
@@ -164,33 +163,35 @@ def extract_images(
 
     image_paths = []
     try:
-        for timestamp_ms in timestamps_ms:
-            timestamp_s = timestamp_ms / 1000
-            image_path = Path(output_dir) / f"image_{timestamp_ms:09d}.png"
+        # Convert timestamps to seconds and create the select filter
+        timestamps_s = sorted(list(set(ts // 1000 for ts in timestamps_ms)))
+        select_filter = '+'.join([f"eq(t,{t})" for t in timestamps_s])
 
-            subprocess.run(
-                [
-                    "ffmpeg",
-                    "-ss",
-                    f"{timestamp_s:.3f}",
-                    "-i",
-                    str(video_path),
-                    "-frames:v",
-                    "1",
-                    "-q:v",
-                    "2",
-                    "-f",
-                    "image2",
-                    str(image_path),
-                ],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
+        # Construct the FFmpeg command
+        ffmpeg_command = [
+            "ffmpeg",
+            "-i", str(video_path),
+            "-vf", f"select='{select_filter}',setpts=N/FRAME_RATE/TB",
+            "-vsync", "0",
+            "-q:v", "2",
+            "-f", "image2",
+            str(output_dir / "image_%d.png")
+        ]
 
-            image_paths.append(image_path)
+        # Run FFmpeg command to extract all images at once
+        subprocess.run(
+            ffmpeg_command,
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+        # Get all image files in the output directory and sort them alphabetically
+        image_paths = [output_dir / f"image_{timestamps_s.index(ts // 1000) + 1}.png" for ts in timestamps_ms]
+
+        if not image_paths:
+            raise RuntimeError("No images were extracted from the video.")
     finally:
-        # Delete the downloaded video file
         if video_path:
             video_path.unlink()
 

@@ -1,6 +1,15 @@
-import platogram
+from pathlib import Path
+
 import pytest
-from platogram.ops import chunk_text, get_paragraphs, parse
+
+import platogram
+from platogram.ops import (
+    chunk_text,
+    expand_and_add_figures,
+    get_chapters,
+    get_paragraphs,
+    parse,
+)
 
 
 def test_get_paragraphs() -> None:
@@ -19,6 +28,58 @@ def test_get_paragraphs_es() -> None:
         text, llm, max_tokens=2048, temperature=0.5, chunk_size=1024, lang="es"
     )
     assert len(paragraphs) > 2
+    
+
+def test_get_chapters() -> None:
+    llm = platogram.llm.get_model("anthropic/claude-3-5-sonnet")
+    chapters = get_chapters(
+        [
+            "This is the first paragraph of the first chapter.【0】This is the second paragraph of the first chapter.【1】",
+            "This is the third paragraph of the first chapter.【2】",
+            "This is the first paragraph of the second chapter.【3】This is the second paragraph of the second chapter.【4】",
+            "This is the third paragraph of the second chapter.【5】",
+            "This is the first paragraph of the third chapter.【6】This is the second paragraph of the third chapter.【7】",
+            "This is the third paragraph of the third chapter.【8】",
+            "This is the first paragraph of the fourth chapter.【9】This is the second paragraph of the fourth chapter.【10】",
+            "This is the third paragraph of the fourth chapter.【11】",
+            "This is the first paragraph of the fifth chapter.【12】This is the second paragraph of the fifth chapter.【13】",
+            "This is the third paragraph of the fifth chapter.【14】",
+            "This is the first paragraph of the sixth chapter.【15】This is the second paragraph of the sixth chapter.【16】",
+            "This is the third paragraph of the sixth chapter.【17】",
+            "This is the first paragraph of the seventh chapter.【18】This is the second paragraph of the seventh chapter.【19】",
+            "This is the third paragraph of the seventh chapter.【20】",
+            "This is the first paragraph of the eighth chapter.【21】This is the second paragraph of the eighth chapter.【22】",
+            "This is the third paragraph of the eighth chapter.【23】",
+        ],
+        llm,
+        temperature=0.5,
+        chapter_size_words=48,
+        chunk_size_tokens=64,
+    )
+
+    assert list(chapters.keys()) == [0, 3, 6, 9, 12, 15, 18, 21], f"chapters: {chapters}"
+
+
+def test_expand_and_add_figures() -> None:
+    llm = platogram.llm.get_model("anthropic/claude-3-5-sonnet")
+    passages = [
+        "This is the first paragraph of the first chapter.【0】This is the second paragraph of the first chapter.【1】",
+        "This is the third paragraph of the first chapter.【2】This is the fourth paragraph of the first chapter.【3】",
+        "This is the fifth paragraph of the first chapter. This is the sixth paragraph of the first chapter.【5】",
+    ]
+
+    images = {
+        0: Path("samples/images/0.png"),
+        1: Path("samples/images/1.png"),
+        2: Path("samples/images/2.png"),
+        3: Path("samples/images/3.png"),
+        4: Path("samples/images/4.png"),
+        5: Path("samples/images/5.png"),
+    }
+    text, figures = expand_and_add_figures(passages, images, llm, num_image_samples=4)
+
+    assert text
+    assert figures
 
 
 def test_chunk_empty_input_string():

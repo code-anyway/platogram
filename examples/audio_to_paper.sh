@@ -132,7 +132,10 @@ echo "Generating Documents..."
     sed -E 's/\[\[([0-9]+)\]\]\([^)]+\)//g' |
     sed -E 's/\[([0-9]+)\]//g' |
     tee \
-        >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-no-refs.pdf" --from markdown --pdf-engine=xelatex) >/dev/null
+        >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-no-refs.pdf" --from markdown --pdf-engine=xelatex) \
+        >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-no-refs.docx" --from markdown) \
+        >(cat >"$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-no-refs.md") \
+        >/dev/null
 
 # With References
 (
@@ -148,33 +151,6 @@ echo "Generating Documents..."
 ) |
     tee \
         >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-refs.pdf" --from markdown+header_attributes --pdf-engine=xelatex) >/dev/null
-
-# Check if images are requested
-if [ "$IMAGES" = true ]; then
-    echo "Extracting images..."
-    IMAGE_OUTPUT=$(plato --images "$URL" --lang "$LANG" | sed '/^$/d' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
-    
-    if [ ! -z "$IMAGE_OUTPUT" ]; then
-        # Create a temporary directory for images
-        TMP_IMG_DIR=$(mktemp -d)
-        
-        # Save image paths to temporary files
-        echo "$IMAGE_OUTPUT" | while read -r img_path; do
-            cp ".platogram-cache/$img_path" "$TMP_IMG_DIR/"
-        done
-        
-        # Create zip file with images
-        ZIP_FILE="$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-images.zip"
-        zip -j "$ZIP_FILE" "$TMP_IMG_DIR"/*
-        
-        # Clean up temporary directory
-        rm -rf "$TMP_IMG_DIR"
-        
-        echo "Images saved to $ZIP_FILE"
-    else
-        echo "No images found or extracted."
-    fi
-fi
 
 wait
 

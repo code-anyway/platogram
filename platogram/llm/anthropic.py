@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 from typing import Any, Generator, Literal, Sequence
 
 import anthropic
@@ -40,6 +41,30 @@ class Model:
 
     def count_tokens(self, text: str) -> int:
         return self.client.count_tokens(text)
+    
+    def load_images(self, images: dict[str, Path] | None = None) -> list[dict]:
+        if images is None:
+            return []
+
+        loaded_images = []
+        for image_text, image_path in images.items():
+            with open(image_path, "rb") as image_file:
+                import base64
+                image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+                loaded_images.append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": f"image/{image_path.suffix[1:]}",
+                        "data": image_base64
+                    }
+                })
+                loaded_images.append({
+                    "type": "text",
+                    "text": image_text
+                })
+        return loaded_images
+
 
     def prompt_model(
         self,
@@ -68,11 +93,14 @@ class Model:
                     temperature=temperature,
                     extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
                     messages=[
-                        {"role": m.role, "content": m.content}
+                        {
+                            "role": m.role,
+                            "content": self.load_images(m.images) + [{"type": "text", "text": m.content}]
+                        }
                         if not m.cache
                         else {
                             "role": m.role,
-                            "content": [{"type": "text", "text": m.content, "cache_control": {"type": "ephemeral"}}],
+                            "content": self.load_images(m.images) +[{"type": "text", "text": m.content, "cache_control": {"type": "ephemeral"}}],
                         }
                         for m in messages
                     ],
@@ -188,7 +216,8 @@ Siempre llama al tool render_content_info y pasa la información sobre el conten
     def get_chapters(
         self,
         passages: list[str],
-        max_tokens: int = 4096,
+        context: dict[int, str],
+        chapter_size_words: int,
         temperature: float = 0.5,
         lang: str | None = None,
     ) -> dict[int, str]:
@@ -196,16 +225,17 @@ Siempre llama al tool render_content_info y pasa la información sobre el conten
             lang = "en"
 
         system_prompt = {
-            "en": """<role>
+            "en": f"""<role>
 You are a very capable editor, speaker, educator, and author who is really good at reading text that represents transcript of human speech and rewriting it into well-structured, information-dense written text.
 </role>
 <task>
 You will be given <passages> of text in a format "<p>text【0】text【1】... text 【2】</p>". Where each【number】is a <marker> and goes AFTER the text it references. Markers are zero-based and are in sequential order.
+You will also be given <context> chat contains prior <chapters>.
 
 Follow these steps to transform the <passages> into a dictionary of chapters:
-1. Read the <passages> carefully and come up with a list of <chapters> that equally cover the <passages>.
-2. Review <chapters> and <passages> and for each chapter generate <title> and first <marker> from the relevant passage and create a <chapter> object and add it to the list.
-3. Call <chapter_tool> and pass the list of <chapter> objects.
+1. Read <passages> and <context> carefully and come up with a list of <chapters> that cover at least two sequential passages (two or more) and each chapter has around {chapter_size_words} words.
+2. For each chapter generate <title> and first <marker> from the first <passage> in the chapter.
+3. For each chapter call <chapter_tool> and pass <title> and <marker>.
 </task>
 """.strip(),
             "es": """<role>
@@ -262,12 +292,12 @@ Sigue estos pasos para transformar los <passages> en un diccionario de capítulo
         }
 
         text = "\n".join([f"<p>{passage}</p>" for passage in passages])
+        context_str = "\n".join([f"<chapter><marker>{int(marker)}</marker><title>{title}</title></chapter>" for marker, title in context.items()])
 
         chapters = self.prompt_model(
             system=system_prompt[lang],
-            messages=[User(content=f"<passages>{text}</passages>")],
+            messages=[User(content=f"<passages>{text}</passages><context>{context_str}</context>")],
             tools=[tool_definition],
-            max_tokens=max_tokens,
             temperature=temperature,
         )
 
@@ -462,3 +492,97 @@ Sigue los pasos en <scratchpad> para construir <response> que esté bien estruct
         )
         assert isinstance(response, str), f"Expected LLM to return str, got {response}"
         return response
+
+
+    def expand_chapter_text(self, chapter_text: str, images: dict[int, Path], temperature: float = 0.5) -> str:
+        system_prompt = """<role>
+You are a very capable editor, speaker, educator, and author who is really good at reviewing text and images to create meaningful connections.
+</role>
+<task>
+You will be given images with labels. Each image label corresponds to a marker in the <chapter_text>.
+You will be given a <chapter_text> that contains multiple paragraphs separated by two new lines.
+Each paragraph contains special markers in the format of "text【number】text【number】... text 【number】". All numbers are unique.
+Study the images and <chapter_text>. Select the most relevant images.
+Stick to the style of <chapter_text> and paraphrase text around markers to include the information from the most relevant images.
+Keep all the original markers in the <chapter_text>.
+Avoid referring to the images directly in the <chapter_text>.
+</task>
+<output_format>
+Use markdown for code and lists you transferred from the images.
+Output in the following format:
+<improved_chapter_text>
+Improved <chapter_text>
+</improved_chapter_text>
+</output_format>
+"""
+        response = self.prompt_model(
+            system=system_prompt,
+            messages=[
+                User(content=f"<chapter_text>{chapter_text}</chapter_text>", images={f"【{i}】": p for i, p in images.items()}),
+                Assistant(content="<improved_chapter_text>"),],
+            temperature=temperature,
+        )
+        assert isinstance(response, str), f"Expected LLM to return str, got {response}"
+        response = response.replace("</improved_chapter_text>", "").strip()
+        return response
+    
+    
+    def get_figures(self, chapter_text: str, images: list[Path]) -> dict[int, str]:
+        system_prompt = """<role>
+You are a very capable editor, speaker, educator, and author with expertise in analyzing text and images to create meaningful connections.
+</role>
+<task>
+You will be given a <chapter_text> that contains multiple paragraphs separated by two new lines.
+Each paragraph contains special markers in the format of "text【number】text【number】... text 【number】". All numbers are unique.
+You will also be given a set of images with labels corresponding to markers in paragraphs.
+
+Your task is to:
+1. Analyze the <chapter_text> and the provided images.
+2. Identify zero or more unique images that are highly relevant to the content of the <chapter_text>.
+3. For each relevant image, create a brief but informative caption that relates it to the nearby text.
+4. Call the <add_figure> tool and pass all markers of relevant images and their captions.
+
+Only select images that are truly relevant and add value to the text. It's acceptable to use no images if none are sufficiently relevant.
+Ensure that the marker numbers are correctly extracted from the text and passed as integers.
+</task>
+"""
+        tool_definition = {
+            "name": "add_figure",
+            "description": "Adds a figure with its marker and caption",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "entities": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "marker": {"type": "integer", "description": "The marker number for the figure"},
+                                "caption": {"type": "string", "description": "A brief, informative caption for the figure"}
+                            },
+                            "required": ["marker", "caption"]
+                        }
+                    }
+                },
+                "required": ["entities"]
+            }
+        }
+
+        response = self.prompt_model(
+            system=system_prompt,
+            messages=[User(content=f"<chapter_text>{chapter_text}</chapter_text>", images={f"【{i}】": p for i, p in enumerate(images)})],
+            tools=[tool_definition],
+            temperature=0.5
+        )
+
+        assert isinstance(response, dict), f"Expected LLM to return dict, got {response}"
+        assert isinstance(response["entities"], list), f"Expected LLM to return list of entities, got {response['entities']}"
+
+        figures = {}
+        for figure in response["entities"]:
+            marker = figure["marker"]
+            caption = figure["caption"]
+            if isinstance(marker, int) and isinstance(caption, str):
+                figures[marker] = caption
+
+        return figures

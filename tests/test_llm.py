@@ -10,13 +10,6 @@ def test_get_meta() -> None:
     assert meta
 
 
-def test_get_chapters() -> None:
-    llm = platogram.llm.get_model("anthropic/claude-3-5-sonnet")
-    chapters = llm.get_chapters(
-        ["First Asset Sentence one and two【0】", "First Asset Sentence three【2】"]
-    )
-    assert chapters
-
 
 def test_prompt() -> None:
     llm = platogram.llm.get_model("anthropic/claude-3-5-sonnet")

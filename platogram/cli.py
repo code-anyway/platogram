@@ -77,17 +77,18 @@ def process_url(
     with tqdm(total=4, desc=f"Processing {url}", file=sys.stderr) as pbar:
         transcript = plato.extract_transcript(url, asr, lang=lang)
         pbar.update(1)
-        pbar.set_description("Indexing content")
-        content = plato.index(transcript, llm, lang=lang)
-        pbar.update(1)
+        images = []
         if extract_images:
             pbar.set_description("Extracting images")
             images_dir = library.home / id
             images_dir.mkdir(exist_ok=True)
-            timestamps_ms = [event.time_ms for event in content.transcript]
+            timestamps_ms = [event.time_ms for event in transcript]
             images = ingest.extract_images(url, images_dir, timestamps_ms)
-            content.images = [str(image.relative_to(library.home)) for image in images]
+            images = {i: image for i, image in enumerate(images)}
             pbar.update(1)
+        pbar.set_description("Indexing content")
+        content = plato.index(transcript, images, llm, lang=lang)
+        pbar.update(1)
         pbar.set_description("Saving content")
         library.put(id, content)
         pbar.update(1)
@@ -242,17 +243,20 @@ def main():
             passages = ""
             if args.chapters:
                 current_chapter = None
-                for passage in content.passages:
-                    passage_markers = [int(m) for m in re.findall(r"【(\d+)】", passage)]
-                    chapter_marker = get_chapter(passage_markers[0]) if passage_markers else None
-                    if chapter_marker is not None and chapter_marker != current_chapter:
-                        passages += f"### {content.chapters[chapter_marker]}\n\n"
-                        current_chapter = chapter_marker
-                    passages += f"{passage.strip()}\n\n"
+                for text in content.text:
+                    for passage in text.split("\n\n"):
+                        passage_markers = [int(m) for m in re.findall(r"【(\d+)】", passage)]
+                        chapter_marker = get_chapter(passage_markers[0]) if passage_markers else None
+                        if chapter_marker is not None and chapter_marker != current_chapter:
+                            passages += f"### {content.chapters[chapter_marker]}\n\n"
+                            current_chapter = chapter_marker
+                        passages += f"{passage.strip()}\n\n"
+                        if content.figures:
+                            for image_marker in set(passage_markers) & set(content.figures):
+                                figure_html = f"![{content.figures[image_marker][0]}]({content.figures[image_marker][1]}){{ width=80% }}\n\n"
+                                passages += figure_html
             else:
-                passages = "\n\n".join(
-                    passage.strip() for passage in content.passages
-                )
+                passages = content.text
 
             result += f"""{passages}\n\n\n\n"""
 

@@ -1,6 +1,12 @@
+import functools
+import random
 import re
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Callable
 
+from PIL import Image
 from tqdm import tqdm  # type: ignore
 
 from platogram.llm import LanguageModel
@@ -149,7 +155,8 @@ def get_paragraphs(
         lang = "en"
 
     examples = {
-        str(example["input"]): list(example["output"]) for example in rewrite_examples[lang]
+        str(example["input"]): list(example["output"])
+        for example in rewrite_examples[lang]
     }
     tail = ""
     paragraphs = []
@@ -166,7 +173,11 @@ def get_paragraphs(
 
             # limit the number of output tokens to chunk size
             for paragraph in llm.get_paragraphs(
-                content, examples, max_tokens=max_tokens, temperature=temperature, lang=lang,
+                content,
+                examples,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                lang=lang,
             ):
                 # we are not parsing again, because sometimes model returns paragraphs without trailing marker
                 paragraphs.append(
@@ -206,34 +217,252 @@ def get_paragraphs(
     return paragraphs
 
 
+def chunk_paragraphs(
+    paragraphs: list[str],
+    chunk_size: int,
+    token_count_fn: Callable[[str], int],
+) -> list[list[str]]:
+    chunks = [[]]
+    current_chunk_size = 0
+    for paragraph in paragraphs:
+        if current_chunk_size > chunk_size:
+            chunks.append([])
+            current_chunk_size = 0
+        current_chunk_size += token_count_fn(paragraph)
+        chunks[-1].append(paragraph)
+
+    if not chunks[-1]:
+        chunks.pop()
+
+    return chunks
+
+
+def get_chapters(
+    paragraphs: list[str],
+    llm: LanguageModel,
+    temperature: float,
+    chapter_size_words: int,
+    chunk_size_tokens: int,
+    lang: str | None = None,
+) -> dict[int, str]:
+    if not lang:
+        lang = "en"
+
+    tail: list[str] = []
+    chunks = chunk_paragraphs(paragraphs, chunk_size_tokens, llm.count_tokens)
+    chapters: dict[int, str] = {}
+    with tqdm(total=len(chunks), initial=0) as pbar:
+        pbar.update(0)
+
+        while chunks:
+            chunk = chunks.pop(0)
+            chunk = tail + chunk
+
+            base_marker = sorted(
+                [int(marker) for marker in re.findall(r"【(\d+)】", chunk[0])]
+            )[0]
+
+            content = [
+                re.sub(
+                    r"【(\d+)】",
+                    lambda match: f"【{int(match.group(1)) - base_marker}】",
+                    paragraph,
+                )
+                for paragraph in chunk
+            ]
+
+            last_marker = 0
+            _chapters = llm.get_chapters(
+                content,
+                context=chapters,
+                chapter_size_words=chapter_size_words,
+                temperature=temperature,
+                lang=lang,
+            ).items()
+            for marker, title in _chapters:
+                chapters[marker + base_marker] = title
+                last_marker = marker + base_marker
+
+            if chunks:
+                chapters.pop(last_marker)
+                tail = [
+                    paragraph
+                    for paragraph in chunk
+                    if sorted(
+                        [int(marker) for marker in re.findall(r"【(\d+)】", paragraph)]
+                    )[0]
+                    >= last_marker
+                ]
+
+            pbar.update(1)
+
+    return chapters
+
+
+def get_chapter(chapters: dict[int, str], passage_marker: int) -> int | None:
+    chapter_markers = list(chapters.keys())
+    for start, end in zip(chapter_markers[:-1], chapter_markers[1:]):
+        if start <= passage_marker < end:
+            return start
+    if passage_marker >= chapter_markers[-1]:
+        return chapter_markers[-1]
+    return None
+
+
+def assemble_chapters(
+    chapters: dict[int, str], passages: list[str]
+) -> dict[int, tuple[str, list[str]]]:
+    def get_passage_marker(passage: str) -> int | None:
+        markers = [int(m) for m in re.findall(r"【(\d+)】", passage)]
+        return markers[0] if markers else None
+
+    def update_chapter(
+        acc: dict[int, tuple[str, list[str]]], passage: str
+    ) -> dict[int, tuple[str, list[str]]]:
+        marker = get_passage_marker(passage)
+        chapter_marker = get_chapter(chapters, marker) if marker is not None else None
+
+        if chapter_marker is not None and chapter_marker not in acc:
+            acc[chapter_marker] = (chapters[chapter_marker], [])
+
+        if chapter_marker is not None:
+            acc[chapter_marker][1].append(passage.strip())
+
+        return acc
+
+    return functools.reduce(update_chapter, passages, {})
+
+
+def expand_and_add_figures(
+    passages: list[str],
+    images: dict[int, Path],
+    llm: LanguageModel,
+    max_image_edge_length_px: int = 1024,
+    num_image_samples: int = 16,
+) -> tuple[str, dict[int, str]]:
+    chapter_text = "\n\n".join(passages)
+
+    if not images:
+        return chapter_text, {}
+
+    with TemporaryDirectory() as tmpdir:
+        def resize_image(image_path: Path, output_dir: Path, max_edge_length: int) -> Path:
+            with Image.open(image_path) as img:
+                img.thumbnail((max_edge_length, max_edge_length), Image.LANCZOS)
+                output_path = output_dir / image_path.name
+                img.save(output_path, optimize=True)
+            return output_path
+
+        with ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(resize_image, img_path, Path(tmpdir), max_image_edge_length_px)
+                for img_path in images.values()
+            ]
+            resized_images = {
+                marker: future.result()
+                for marker, future in zip(images.keys(), futures)
+            }
+
+        images = resized_images
+
+        all_markers = [
+            int(match) for match in re.findall(r"【(\d+)】", chapter_text)
+        ]
+        image_markers = sorted(
+            list(random.sample(all_markers, min(num_image_samples, len(all_markers))))
+        )
+        expanded_chapter_text = llm.expand_chapter_text(
+            re.sub(
+                r"【(\d+)】",
+                lambda m: f"【{all_markers.index(int(m.group(1)))}】",
+                chapter_text,
+            ),
+            {all_markers.index(marker): images[marker] for marker in image_markers},
+        )
+        expanded_chapter_text = re.sub(
+            r"【(\d+)】",
+            lambda m: f"【{all_markers[int(m.group(1))]}】",
+            expanded_chapter_text,
+        )
+
+        figures = llm.get_figures(
+            re.sub(
+                r"【(\d+)】",
+                lambda m: f"【{image_markers.index(marker)}】"
+                if (marker := int(m.group(1))) in image_markers
+                else "",
+                expanded_chapter_text,
+            ),
+            [images[marker] for marker in image_markers],
+        )
+
+        return expanded_chapter_text, {
+            image_markers[marker]: title for marker, title in figures.items()
+        }
+
+
 def index(
     transcript: list[SpeechEvent],
+    images: dict[int, Path],
     llm: LanguageModel,
     max_tokens: int = 4096,
     temperature: float = 0.5,
-    chunk_size: int = 2048,
+    chunk_size_tokens: int = 2048,
+    chapter_size_words: int = 1024,
+    num_image_samples_per_chapter: int = 16,
+    num_workers: int = 8,
     lang: str | None = None,
 ) -> Content:
     text = render({i: event.text for i, event in enumerate(transcript)})
-    paragraphs = get_paragraphs(text, llm, max_tokens, temperature, chunk_size, lang=lang)
-
-    try:
-        title, summary = llm.get_meta(paragraphs, lang=lang)
-    except Exception:
-        title, summary = "Missing Title", "Missing Summary"
-    
-    try:
-        chapters = llm.get_chapters(paragraphs, lang=lang)
-    except Exception:
-        chapters = {0: "All Content"}
-
-    return Content(
-        title=title,
-        summary=summary,
-        passages=paragraphs,  # NOTE: we should experiment and settle on passage vs. paragraph
-        transcript=transcript,
-        chapters=chapters,
+    paragraphs = get_paragraphs(
+        text, llm, max_tokens, temperature, chunk_size_tokens, lang=lang
     )
+
+    title, summary = llm.get_meta(
+        paragraphs, max_tokens=max_tokens, temperature=temperature, lang=lang
+    )
+    chapters = get_chapters(
+        paragraphs,
+        llm,
+        chapter_size_words=chapter_size_words,
+        chunk_size_tokens=chunk_size_tokens,
+        temperature=temperature,
+        lang=lang,
+    )
+
+    if images:
+        text_and_figures = []
+        for chapter, content in assemble_chapters(chapters, paragraphs).items():
+            expanded_text, figures = expand_and_add_figures(
+                content[1],
+                images,
+                llm,
+                num_image_samples=num_image_samples_per_chapter,
+            )
+            text_and_figures.append((expanded_text, figures))
+
+        return Content(
+            title=title,
+            summary=summary,
+            passages=paragraphs,  # NOTE: we should experiment and settle on passage vs. paragraph
+            transcript=transcript,
+            chapters=chapters,
+            text=[text for text, _ in text_and_figures],
+            figures={
+                marker: (caption, str(images[marker]))
+                for _, figures in text_and_figures
+                for marker, caption in figures.items()
+            },
+        )
+    else:
+        return Content(
+            title=title,
+            summary=summary,
+            passages=paragraphs,
+            transcript=transcript,
+            chapters=chapters,
+            text=["\n\n".join(paragraphs) for _, paragraphs in assemble_chapters(chapters, paragraphs).values()],
+        )
 
 
 rewrite_examples = {
