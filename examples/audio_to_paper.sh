@@ -132,6 +132,7 @@ echo "Generating Documents..."
     sed -E 's/\[\[([0-9]+)\]\]\([^)]+\)//g' |
     sed -E 's/\[([0-9]+)\]//g' |
     tee \
+        >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-no-refs.md" --from markdown --to markdown) \
         >(pandoc -o "$(echo "$TITLE" | sed 's/[^a-zA-Z0-9]/_/g')-no-refs.pdf" --from markdown --pdf-engine=xelatex) >/dev/null
 
 # With References

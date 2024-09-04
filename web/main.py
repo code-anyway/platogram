@@ -342,14 +342,12 @@ async def convert_and_send(request: ConversionRequest, user_id: str):
             abstract = ""
             logfire.warning("No abstract found in stdout, using default abstract")
 
-        files = [f for f in Path(tmpdir).glob("*") if f.is_file()]
+        files = [f for f in Path(tmpdir).glob("*no-refs.pdf") if f.is_file()]
 
         subject = f"[Platogram] {title}"
         body = f"""Hi there!
 
-Platogram transformed spoken words into documents you can read and enjoy, or attach to ChatGPT/Claude/etc and prompt!
-
-You'll find two PDF documents attached: full version, with original transcript and references, and a simplified version, without the transcript and references. I hope this helps!
+Platogram transformed spoken words into document you can read and enjoy, or attach to ChatGPT/Claude/etc and prompt!
 
 {abstract}
 
