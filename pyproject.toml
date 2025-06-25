@@ -1,47 +1,56 @@
-[tool.poetry]
+[project]
 name = "platogram"
 version = "0.1.0"
 description = "Platogram: Unlock the power of knowledge stored in audio."
-authors = ["Code Anway <platogram@codeanyway.com>"]
-license = "Apache-2.0"
+authors = [
+    {name = "Code Anway", email = "platogram@codeanyway.com"}
+]
+license = {text = "Apache-2.0"}
 readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "yt-dlp[curl-cffi,default]>=2024.8.6",
+    "anthropic>=0.21.3",
+    "requests>=2.31.0",
+    "assemblyai>=0.26.0",
+    "tenacity>=8.4.1",
+    "tqdm>=4.66.4",
+    "types-tqdm>=4.66.0.20240417",
+    "fastapi>=0.112.0",
+    "authlib>=1.3.1",
+    "pyjwt>=2.9.0",
+    "cryptography>=43.0.0",
+    "httpx>=0.27.0",
+    "logfire>=0.50.1",
+    "google-auth>=2.33.0",
+    "google-auth-oauthlib>=1.2.1",
+    "google-api-python-client>=2.141.0",
+    "stripe>=10.8.0",
+    "telethon>=1.36.0",
+]
 
-[tool.poetry.scripts]
+[project.scripts]
 plato = "platogram.cli:main"
 
-[tool.poetry.dependencies]
-python = ">=3.10"
-yt-dlp = {extras = ["curl-cffi", "default"], version = "^2024.8.6"}
-anthropic = ">=0.21.3"
-requests = "^2.31.0"
-assemblyai = "^0.26.0"
-tenacity = "^8.4.1"
-tqdm = "^4.66.4"
-types-tqdm = "^4.66.0.20240417"
-fastapi = "^0.112.0"
-authlib = "^1.3.1"
-pyjwt = "^2.9.0"
-cryptography = "^43.0.0"
-httpx = "^0.27.0"
-logfire = "^0.50.1"
-google-auth = "^2.33.0"
-google-auth-oauthlib = "^1.2.1"
-google-api-python-client = "^2.141.0"
-stripe = "^10.8.0"
-telethon = "^1.36.0"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.4.3"
-pytest-asyncio = "^0.21.1"
-pytest-xdist = "^3.3.1"
-mypy = ">=1.9.0"
-ruff = ">=0.3.5"
-coverage = "^7.3.2"
-ipykernel = "^6.26.0"
-pytest-cov = "^4.1.0"
-isort = "^5.13.2"
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.3",
+    "pytest-asyncio>=0.21.1",
+    "pytest-xdist>=3.3.1",
+    "mypy>=1.9.0",
+    "ruff>=0.3.5",
+    "coverage>=7.3.2",
+    "ipykernel>=6.26.0",
+    "pytest-cov>=4.1.0",
+    "isort>=5.13.2",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]
 
