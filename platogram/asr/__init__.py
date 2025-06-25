@@ -12,5 +12,10 @@ def get_model(full_model_name: str, key: str | None = None) -> ASRModel:
         from .assembly import Model
 
         return Model(full_model_name.split("/")[-1], key)
+    elif full_model_name.startswith("whisper-local/"):
+        from .whisper_local import Model
+        
+        model_size = full_model_name.split("/")[-1]
+        return Model(model_size)
     else:
         raise ValueError(f"Unsupported ASR model: {full_model_name}")
