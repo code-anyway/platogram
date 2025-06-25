@@ -19,21 +19,43 @@ Platogram is an open-source project that converts audio content into structured,
 ### Prerequisites
 
 - Access to Anthropic's Claude API (required)
-- Assembly AI API access (optional, for transcription)
 - Python 3.10+
-- FFmpeg (optional, for transcription)
+- FFmpeg (for audio/video conversion)
+- whisper.cpp (installed via `brew install whisper-cpp`)
+- Assembly AI API access (optional, alternative to local Whisper)
 
 ### Installation
 
 ```bash
-pip install git+https://github.com/code-anyway/platogram.git
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install platogram
+uv pip install git+https://github.com/code-anyway/platogram.git
 ```
 
 ## Basic Usage
 
 ### Command Line Interface (CLI)
 
-Obtain your API keys for Anthropic and Aseembly AI. Provide a URL to audio source or local file name.
+Obtain your API key for Anthropic. Local Whisper transcription is used by default.
+
+```bash
+plato \
+--anthropic-api-key "YOUR_ANTHROPIC_API_KEY" \
+https://www.youtube.com/shorts/XsLK3tPy9SI
+```
+
+You can specify the Whisper model size for better accuracy vs speed tradeoff:
+
+```bash
+plato \
+--anthropic-api-key "YOUR_ANTHROPIC_API_KEY" \
+--whisper-model large-v3 \
+https://www.youtube.com/shorts/XsLK3tPy9SI
+```
+
+Or use AssemblyAI if you prefer:
 
 ```bash
 plato \
@@ -50,7 +72,8 @@ import platogram as plato
 
 # Initialize models
 llm = plato.llm.get_model("anthropic/claude-3-5-sonnet", "YOUR_ANTHROPIC_API_KEY")
-asr = plato.asr.get_model("assembly-ai/best", "YOUR_ASSEMBLYAI_API_KEY")  # Optional
+asr = plato.asr.get_model("whisper-local/large-v3")  # Local Whisper (default)
+# asr = plato.asr.get_model("assembly-ai/best", "YOUR_ASSEMBLYAI_API_KEY")  # Alternative
 
 # Process audio
 url = "https://www.youtube.com/shorts/XsLK3tPy9SI"
