@@ -39,7 +39,12 @@ class Model:
         self.client = anthropic.Client(api_key=key)
 
     def count_tokens(self, text: str) -> int:
-        return self.client.count_tokens(text)
+        # Use the messages.count_tokens API for the current Anthropic client
+        response = self.client.messages.count_tokens(
+            model=self.model,
+            messages=[{"role": "user", "content": text}]
+        )
+        return response.input_tokens
 
     def prompt_model(
         self,
