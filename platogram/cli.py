@@ -57,6 +57,7 @@ def process_url(
     library: Library,
     anthropic_api_key: str,
     assemblyai_api_key: str | None = None,
+    whisper_model: str = "base",
     extract_images: bool = False,
     lang: str | None = None,
 ) -> Content:
@@ -64,11 +65,12 @@ def process_url(
         lang = "en"
 
     llm = plato.llm.get_model("anthropic/claude-3-5-sonnet", anthropic_api_key)
-    asr = (
-        plato.asr.get_model("assembly-ai/best", assemblyai_api_key)
-        if assemblyai_api_key
-        else None
-    )
+    
+    # Use local Whisper by default, fallback to AssemblyAI if API key provided
+    if assemblyai_api_key:
+        asr = plato.asr.get_model("assembly-ai/best", assemblyai_api_key)
+    else:
+        asr = plato.asr.get_model(f"whisper-local/{whisper_model}")
     id = make_filesystem_safe(url)
 
     if library.exists(id):
@@ -77,20 +79,42 @@ def process_url(
     with tqdm(total=4, desc=f"Processing {url}", file=sys.stderr) as pbar:
         transcript = plato.extract_transcript(url, asr, lang=lang)
         pbar.update(1)
+        
+        # Cache transcript immediately in case LLM processing fails
+        transcript_cache_id = f"{id}_transcript"
+        if not library.exists(transcript_cache_id):
+            from platogram.types import Content
+            transcript_content = Content(
+                title="Cached Transcript",
+                summary="Transcript cached before LLM processing",
+                chapters={0: "Full Transcript"},
+                passages=[],
+                transcript=transcript,
+                origin=url
+            )
+            library.put(transcript_cache_id, transcript_content)
+        
         pbar.set_description("Indexing content")
-        content = plato.index(transcript, llm, lang=lang)
-        pbar.update(1)
-        if extract_images:
-            pbar.set_description("Extracting images")
-            images_dir = library.home / id
-            images_dir.mkdir(exist_ok=True)
-            timestamps_ms = [event.time_ms for event in content.transcript]
-            images = ingest.extract_images(url, images_dir, timestamps_ms)
-            content.images = [str(image.relative_to(library.home)) for image in images]
+        try:
+            content = plato.index(transcript, llm, lang=lang)
             pbar.update(1)
-        pbar.set_description("Saving content")
-        library.put(id, content)
-        pbar.update(1)
+            if extract_images:
+                pbar.set_description("Extracting images")
+                images_dir = library.home / id
+                images_dir.mkdir(exist_ok=True)
+                timestamps_ms = [event.time_ms for event in content.transcript]
+                images = ingest.extract_images(url, images_dir, timestamps_ms)
+                content.images = [str(image.relative_to(library.home)) for image in images]
+                pbar.update(1)
+            pbar.set_description("Saving content")
+            library.put(id, content)
+            pbar.update(1)
+        except Exception as e:
+            # If LLM processing fails, return the cached transcript
+            pbar.set_description("LLM processing failed, returning transcript")
+            cached_content = library.get_content(transcript_cache_id)
+            pbar.update(3)  # Skip remaining steps
+            raise RuntimeError(f"LLM processing failed, but transcript is cached as '{transcript_cache_id}': {e}")
 
     return content
 
@@ -128,6 +152,8 @@ def main():
     parser.add_argument("--lang", help="Content language: en, es")
     parser.add_argument("--anthropic-api-key", help="Anthropic API key")
     parser.add_argument("--assemblyai-api-key", help="AssemblyAI API key (optional)")
+    parser.add_argument("--whisper-model", default="large-v3", help="Local Whisper model size (tiny, base, small, medium, large, large-v3)")
+    parser.add_argument("--transcript-only", action="store_true", help="Only transcribe, skip LLM processing (faster)")
     parser.add_argument(
         "--retrieve", default=None, help="Number of results to retrieve"
     )
@@ -187,6 +213,7 @@ def main():
                 library,
                 args.anthropic_api_key,
                 args.assemblyai_api_key,
+                args.whisper_model,
                 extract_images=args.images,
                 lang=lang,
             )
